@@ -5,16 +5,16 @@ import shutil
 
 import boto3
 
-BUCKET = 'require-id-bucket'
+BUCKET = None  # 'require-id-bucket'
 LOCAL_DIRECTORY = '/backups'
 
 
-def s3_backup(key, data):
+def s3_backup(identifier, data):
     # SMELL: don't really know if this works credential wise
     client = boto3.client('s3')
     client.put_object(
         Bucket=BUCKET,
-        Key=f'backups/{key}',
+        Key=f'backups/{identifier}',
         Body=data
     )
 
@@ -45,7 +45,7 @@ async def handler(event, context):
     if isinstance(encrypted_data, str):
         encrypted_data_bytes = encrypted_data.encode('utf-8')
     try:
-        if BUCKET:
+        if BUCKET:  # SMELL: maybe change this to some sort of setting from tomodachi
                 s3_backup(key=identifier, data=encrypted_data_bytes)
         else:
             local_backup(identifier, encrypted_data_bytes)
