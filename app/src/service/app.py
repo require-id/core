@@ -17,10 +17,10 @@ class Service(Base):
             method_module = importlib.import_module(f'handlers.{function_name}')
             func = getattr(method_module, 'handler', None)
         except ModuleNotFoundError:
-            return await self.error(404)
+            return 404, await self.error(404)
 
         if not func:
-            return await self.error(404)
+            return 404, await self.error(404)
 
         response = await func(None, None)
         return response.get('statusCode'), response.get('body')
