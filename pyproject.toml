@@ -1,0 +1,10 @@
+[tool.poetry]
+name = "require-id"
+version = "0.0.0"
+description = ""
+authors = [""]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+tomodachi = "^0.16.2"
+

@@ -1,0 +1,42 @@
+#!/bin/bash
+
+trap cleanup 1 3 6 9 15
+
+cleanup()
+{
+    if [ $APP_PID ]; then
+        if [ ! $KILL_PID ]; then
+            KILL_PID=`pstree -p $APP_PID | head -n1 | sed 's/^\([^)]*[)]-[+-]-[^)]*[)]\).*$/\1/' | awk -F '[()]' '{ print $(NF-1) }'`
+            kill $KILL_PID > /dev/null 2> /dev/null
+        fi
+        wait $APP_PID > /dev/null 2> /dev/null
+    fi
+}
+
+if [ ! -e /run/nginx.pid ]; then
+    service nginx start > /dev/null 2> /dev/null
+    touch /run/docker_services
+fi
+
+if [ $1 ]; then
+    WHICH_CMD=`which $1`
+    if [[ "$WHICH_CMD" == "/bin/sh" ]] && [[ "$2" == "-c" ]]; then
+        if [[ "$3" == "\""*"\"" ]]; then
+            WHICH_CMD=`echo -n $3 | sed 's/^\"//' | sed 's/\"$//'`
+            SPLIT_CMD=($WHICH_CMD)
+            WHICH_CMD=${SPLIT_CMD[0]}
+            WHICH_CMD=`which $WHICH_CMD`
+        else
+            WHICH_CMD=`echo -n $3 | sed 's/ .*//'`
+            WHICH_CMD=`which $WHICH_CMD`
+        fi
+    fi
+    if [[ "$WHICH_CMD" == "/bin/bash" ]] || [[ "$WHICH_CMD" == "/bin/sh" ]] || [[ "$WHICH_CMD" == "/usr/bin/screen" ]]; then
+        "${@}"
+    else
+        "${@}" &
+        APP_PID=$!
+        wait $APP_PID > /dev/null 2> /dev/null
+    fi
+fi
+
