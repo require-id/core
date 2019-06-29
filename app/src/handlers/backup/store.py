@@ -24,7 +24,7 @@ def local_backup(identifier, encrypted_data_bytes):
     if os.path.isfile(backup_file_path):
         shutil.copyfile(backup_file_path, f'{backup_file_path}.lastver')
 
-    with open(backup_file_path) as backup_file:
+    with open(backup_file_path, 'wb') as backup_file:
         backup_file.write(encrypted_data_bytes)
 
 
