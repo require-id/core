@@ -39,17 +39,25 @@ class LambdaEvent:
         }
 
 
+class SelfHostedConfig:
+    def __init__(self, config_data):
+        self.aws_access_key_id = config_data.get('aws', {}).get('aws_access_key_id')
+        self.aws_secret_access_key = config_data.get('aws', {}).get('aws_secret_access_key')
+
+        self.backup_storage_method = config_data.get('backups', {}).get('storage_method')
+        self.backup_s3_bucket = config_data.get('backups', {}).get('s3_bucket')
+
+
 class Service(Base):
     name = 'require-id'
 
     def __init__(self):
-        config_data = json.loads(os.getenv('CONFIG_DATA') or '{}')
-        self.api_key = config_data.get('api_key')
+        self.config = json.loads(os.getenv('CONFIG_DATA') or '{}')
 
     @tomodachi.http('*', r'/(?P<api>[^/]+?)/?(?P<function_name>[^/]+?)/?')
     async def lambda_wrapper(self, request, api, function_name):
         api_key = request.headers.get('API-Key') or request.headers.get('X-API-Key')
-        if api_key != self.api_key:
+        if api_key != self.config.get('api_key'):
             return 403, await self.error(403)
 
         api = re.sub(r'[^a-z0-9_]', '_', api)
@@ -69,8 +77,9 @@ class Service(Base):
 
         event = LambdaEvent(request)
         context = LambdaContext()
+        self_hosted_config = SelfHostedConfig(self.config)
 
-        response = await func(event.as_dict(), context)
+        response = await func(event.as_dict(), context, self_hosted_config=self_hosted_config)
         status_code = response.get('statusCode')
         if status_code >= 400:
             return status_code, await self.error(status_code)

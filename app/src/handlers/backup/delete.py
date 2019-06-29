@@ -5,13 +5,14 @@ import os
 import boto3
 
 BUCKET = None  # 'require-id-bucket'
-LOCAL_DIRECTORY = '/backups'
+LOCAL_DIRECTORY = '/backup'
 
 
 def delete_s3_backups(identifier):
+    # SMELL: don't really know if this works credential wise
     s3 = boto3.resource('s3')
     versions = s3.Bucket(BUCKET).object_versions.filter(
-        Prefix=f'backups/{identifier}'
+        Prefix=f'backup/{identifier}'
     )
     for version in versions:
         s3_object = version.get()
@@ -32,7 +33,7 @@ def delete_local_backups(identifier):
         os.remove(lastver_backup_file_path)
 
 
-async def handler(event, context):
+async def handler(event, context, self_hosted_config=None):
     aws_request_id = context.aws_request_id
     method = event.get('httpMethod')
     body = event.get('body')
@@ -46,10 +47,20 @@ async def handler(event, context):
     json_data = json.loads(body)
     identifier = json_data.get('identifier')
 
-    if BUCKET:
-        delete_s3_backups(identifier)
-    else:
-        delete_local_backups(identifier)
+    try:
+        if not self_hosted_config:
+                delete_s3_backups(identifier)
+        else:
+            if self_hosted_config.backup_storage_method == 'local':
+                delete_local_backups(identifier)
+            elif self_hosted_config.backup_storage_method == 's3':
+                # here you should add an async s3 method
+                pass
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'message': 'Internal Server Error', 'error': f'{e}'})
+        }
 
     return {
         'statusCode': 200,

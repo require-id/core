@@ -1,3 +1,11 @@
 {
-    "api_key": "exampleexampleexampleexampleexample00000"
+    "api_key": "exampleexampleexampleexampleexample00000",
+    "aws": {
+        "aws_access_key_id": "AKIAXXXXXXXREQUESTID",
+        "aws_secret_access_key": "abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcde"
+    },
+    "backups": {
+        "storage_method": "local || s3",
+        "s3_bucket": null
+    }
 }

@@ -6,7 +6,7 @@ import shutil
 import boto3
 
 BUCKET = None  # 'require-id-bucket'
-LOCAL_DIRECTORY = '/backups'
+LOCAL_DIRECTORY = '/backup'
 
 
 def s3_backup(identifier, data):
@@ -14,7 +14,7 @@ def s3_backup(identifier, data):
     client = boto3.client('s3')
     client.put_object(
         Bucket=BUCKET,
-        Key=f'backups/{identifier}',
+        Key=f'backup/{identifier}',
         Body=data
     )
 
@@ -28,7 +28,7 @@ def local_backup(identifier, encrypted_data_bytes):
         backup_file.write(encrypted_data_bytes)
 
 
-async def handler(event, context):
+async def handler(event, context, self_hosted_config=None):
     # aws_request_id = context.aws_request_id
     method = event.get('httpMethod')
     body = event.get('body')
@@ -45,10 +45,14 @@ async def handler(event, context):
     if isinstance(encrypted_data, str):
         encrypted_data_bytes = encrypted_data.encode('utf-8')
     try:
-        if BUCKET:  # SMELL: maybe change this to some sort of setting from tomodachi
-                s3_backup(key=identifier, data=encrypted_data_bytes)
+        if not self_hosted_config:
+            s3_backup(key=identifier, data=encrypted_data_bytes)
         else:
-            local_backup(identifier, encrypted_data_bytes)
+            if self_hosted_config.backup_storage_method == 'local':
+                local_backup(identifier, encrypted_data_bytes)
+            elif self_hosted_config.backup_storage_method == 's3':
+                # here you should add an async s3 method
+                pass
     except Exception as e:
         return {
             'statusCode': 500,

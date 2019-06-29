@@ -5,7 +5,7 @@ import os
 import boto3
 
 BUCKET = None  # 'require-id-bucket'
-LOCAL_DIRECTORY = '/backups'
+LOCAL_DIRECTORY = '/backup'
 
 
 def get_s3_backup(identifier):
@@ -13,7 +13,7 @@ def get_s3_backup(identifier):
     client = boto3.client('s3')
     return client.get_object(
         Bucket=BUCKET,
-        Key=f'backups/{identifier}'
+        Key=f'backup/{identifier}'
     ).get('Body')
 
 
@@ -24,7 +24,7 @@ def get_local_backup(identifier):
             return backup_file.read()
 
 
-async def handler(event, context):
+async def handler(event, context, self_hosted_config=None):
     aws_request_id = context.aws_request_id
     method = event.get('httpMethod')
     body = event.get('body')
@@ -38,10 +38,19 @@ async def handler(event, context):
     json_data = json.loads(body)
     identifier = json_data.get('identifier')
 
-    if BUCKET:  # SMELL: maybe change this to some sort of setting from tomodachi
+    if not self_hosted_config:
         backup_data = get_s3_backup(key=identifier)
     else:
-        backup_data = get_local_backup(identifier)
+        if self_hosted_config.backup_storage_method == 'local':
+            backup_data = get_local_backup(identifier)
+        elif self_hosted_config.backup_storage_method == 's3':
+            # here you should add an async s3 method
+            pass
+        else:
+            return {
+                'statusCode': 404,
+                'body': json.dumps({'message': 'No backup data found.'})
+            }
 
     if not backup_data:
         return {
