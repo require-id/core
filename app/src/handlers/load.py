@@ -2,9 +2,12 @@ import asyncio
 
 
 async def handler(event, context):
+    aws_request_id = context.aws_request_id
+    method = event.get('httpMethod')
+
     return {
         'statusCode': 200,
-        'body': 'This is the load function'
+        'body': f'{method} – load: {aws_request_id}'
     }
 
 

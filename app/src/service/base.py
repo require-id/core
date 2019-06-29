@@ -6,17 +6,17 @@ import tomodachi
 
 class Base(tomodachi.Service):
     error_responses = {
-        400: 'bad-request',
-        401: 'unauthorized',
-        403: 'forbidden',
-        404: 'not-found',
-        405: 'method-not-allowed',
-        406: 'not-acceptable',
-        411: 'length-required',
-        413: 'request-entity-too-large',
-        414: 'request-uri-too-long',
-        431: 'request-header-too-large',
-        500: 'internal-server-error'
+        400: 'Bad Request',
+        401: 'Unauthorized',
+        403: 'Forbidden',
+        404: 'Missing Authentication Token',
+        405: 'Method Not Allowed',
+        406: 'Not Acceptable',
+        411: 'Length required',
+        413: 'Request Entity Too Large',
+        414: 'Request URI Too Long',
+        431: 'Request Header Too Large',
+        500: 'Internal Server Error'
     }
 
     options = {
@@ -33,7 +33,7 @@ class Base(tomodachi.Service):
         return await json.dumps({'status': 'ok'})
 
     async def error(self, status_code):
-        return json.dumps({'error': self.error_responses.get(status_code, 'unknown')})
+        return json.dumps({'message': self.error_responses.get(status_code, 'unknown')})
 
     @tomodachi.http_error(status_code=400)
     async def error_400(self, request):
