@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion : '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: Store and restore backup functionality
+Resources:
+  RequireIDLoad:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      CodeUri: ./app/src/handlers
+      Handler: load.run
+      Events:
+        RequrieIDLoad:
+          Type: Api
+          Properties:
+            Path: /load
+            Method: GET
+  RequireIDStore:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      CodeUri: ./app/src/handlers
+      Handler: store.run
+      Events:
+        RequrieIDLoad:
+          Type: Api
+          Properties:
+            Path: /store
+            Method: GET
