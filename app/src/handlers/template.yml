@@ -1,0 +1,99 @@
+AWSTemplateFormatVersion : '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: require.id API
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: require-id
+    Description: require.id API
+    Author: require-id
+    HomePageUrl: https://require.id/
+    SourceCodeUrl: https://github.com/require-id
+Resources:
+  RequireIDBackupLoad:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      Handler: backup.load.run
+      Events:
+        HTTP:
+          Type: Api
+          Properties:
+            Path: /backup/load
+            Method: GET
+  RequireIDBackupStore:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      Handler: backup.store.run
+      Events:
+        HTTP:
+          Type: Api
+          Properties:
+            Path: /backup/store
+            Method: POST
+  RequireIDBackupDelete:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      Handler: backup.delete.run
+      Events:
+        HTTP:
+          Type: Api
+          Properties:
+            Path: /backup/delete
+            Method: POST
+  RequireIDAppPoll:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      Handler: app.poll.run
+      Events:
+        HTTP:
+          Type: Api
+          Properties:
+            Path: /app/poll
+            Method: GET
+  RequireIDAppResponse:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      Handler: app.response.run
+      Events:
+        HTTP:
+          Type: Api
+          Properties:
+            Path: /app/response
+            Method: POST
+  RequireIDPromptNew:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      Handler: prompt.new.run
+      Events:
+        HTTP:
+          Type: Api
+          Properties:
+            Path: /prompt/new
+            Method: POST
+  RequireIDPromptPoll:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      Handler: prompt.poll.run
+      Events:
+        HTTP:
+          Type: Api
+          Properties:
+            Path: /prompt/poll
+            Method: GET
+  RequireIDPromptAbort:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      Handler: prompt.abort.run
+      Events:
+        HTTP:
+          Type: Api
+          Properties:
+            Path: /prompt/abort
+            Method: POST
