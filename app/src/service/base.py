@@ -19,16 +19,14 @@ class Base(tomodachi.Service):
         500: 'internal-server-error'
     }
 
-    def __init__(self) -> None:
-        # Default options
-        self.options = {
-            'http': {
-                'port': 8080,
-                'content_type': 'application/json; charset=utf-8',
-                'access_log': True,
-                'real_ip_from': '127.0.0.1'
-            }
+    options = {
+        'http': {
+            'port': 8080,
+            'content_type': 'application/json; charset=utf-8',
+            'access_log': True,
+            'real_ip_from': '127.0.0.1'
         }
+    }
 
     @tomodachi.http('GET', r'/health/?')
     async def health(self, request):
