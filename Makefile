@@ -69,6 +69,9 @@ poetry_remove:
 	docker run -ti -v ${PWD}:/project -w /project ${IMAGE_NAME}:dev poetry remove ${RUN_ARGS}
 	make build
 
+sam_api:
+	sam local start-api
+
 
 start: run
 go: run
