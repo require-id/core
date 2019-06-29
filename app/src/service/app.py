@@ -54,7 +54,7 @@ class Service(Base):
     def __init__(self):
         self.config = json.loads(os.getenv('CONFIG_DATA') or '{}')
 
-    @tomodachi.http('*', r'/(?P<api>[^/]+?)/?(?P<function_name>[^/]+?)/?')
+    @tomodachi.http('*', r'/(?P<api>[^/]+?)/(?P<function_name>[^/]+?)/?')
     async def lambda_wrapper(self, request, api, function_name):
         api_key = request.headers.get('API-Key') or request.headers.get('X-API-Key')
         if api_key != self.config.get('api_key'):
@@ -67,7 +67,7 @@ class Service(Base):
             return 404, await self.error(404)
 
         try:
-            method_module = importlib.import_module(f'handlers.{api}.{function_name}')
+            method_module = importlib.import_module(f'lambdas.index')
             func = getattr(method_module, 'handler', None)
         except ModuleNotFoundError:
             return 404, await self.error(404)
@@ -79,8 +79,7 @@ class Service(Base):
         context = LambdaContext()
         self_hosted_config = SelfHostedConfig(self.config)
 
-        response = await func(event.as_dict(), context, self_hosted_config=self_hosted_config)
-        status_code = response.get('statusCode')
+        status_code, body = await func(event.as_dict(), context, self_hosted_config=self_hosted_config)
         if status_code >= 400:
             return status_code, await self.error(status_code)
-        return status_code, response.get('body')
+        return status_code, body

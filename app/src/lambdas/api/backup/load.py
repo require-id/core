@@ -30,10 +30,7 @@ async def handler(event, context, self_hosted_config=None):
     body = event.get('body')
 
     if method not in ('HEAD', 'GET'):
-        return {
-            'statusCode': 405,
-            'body': json.dumps({'message': 'Method Not Allowed'})
-        }
+        return 405, 'Method Not Allowed'
 
     json_data = json.loads(body)
     identifier = json_data.get('identifier')
@@ -47,23 +44,9 @@ async def handler(event, context, self_hosted_config=None):
             # here you should add an async s3 method
             pass
         else:
-            return {
-                'statusCode': 404,
-                'body': json.dumps({'message': 'No backup data found.'})
-            }
+            return 404, json.dumps({'message': 'No backup data found.'})
 
     if not backup_data:
-        return {
-            'statusCode': 404,
-            'body': json.dumps({'message': 'No backup data found.'})
-        }
+        return 404, json.dumps({'message': 'No backup data found.'})
 
-    return {
-        'statusCode': 200,
-        'body': f'{method} – backup.load: {aws_request_id}'
-    }
-
-
-def run(event, context):
-    loop = asyncio.get_event_loop()
-    return loop.run_until_complete(handler(event, context))
+    return 200, f'{method} – backup.load: {aws_request_id}'

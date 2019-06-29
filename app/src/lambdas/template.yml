@@ -9,90 +9,48 @@ Metadata:
     HomePageUrl: https://require.id/
     SourceCodeUrl: https://github.com/require-id
 Resources:
-  RequireIDBackupLoad:
+  RequireID:
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.7
-      Handler: backup.load.run
+      Handler: index.run
       Events:
-        HTTP:
+        BackupLoad:
           Type: Api
           Properties:
             Path: /backup/load
             Method: GET
-  RequireIDBackupStore:
-    Type: AWS::Serverless::Function
-    Properties:
-      Runtime: python3.7
-      Handler: backup.store.run
-      Events:
-        HTTP:
+        BackupStore:
           Type: Api
           Properties:
             Path: /backup/store
             Method: POST
-  RequireIDBackupDelete:
-    Type: AWS::Serverless::Function
-    Properties:
-      Runtime: python3.7
-      Handler: backup.delete.run
-      Events:
-        HTTP:
+        BackupDelete:
           Type: Api
           Properties:
             Path: /backup/delete
             Method: POST
-  RequireIDAppPoll:
-    Type: AWS::Serverless::Function
-    Properties:
-      Runtime: python3.7
-      Handler: app.poll.run
-      Events:
-        HTTP:
+        AppPoll:
           Type: Api
           Properties:
             Path: /app/poll
             Method: GET
-  RequireIDAppResponse:
-    Type: AWS::Serverless::Function
-    Properties:
-      Runtime: python3.7
-      Handler: app.response.run
-      Events:
-        HTTP:
+        AppResponse:
           Type: Api
           Properties:
             Path: /app/response
             Method: POST
-  RequireIDPromptNew:
-    Type: AWS::Serverless::Function
-    Properties:
-      Runtime: python3.7
-      Handler: prompt.new.run
-      Events:
-        HTTP:
+        PromptNew:
           Type: Api
           Properties:
             Path: /prompt/new
             Method: POST
-  RequireIDPromptPoll:
-    Type: AWS::Serverless::Function
-    Properties:
-      Runtime: python3.7
-      Handler: prompt.poll.run
-      Events:
-        HTTP:
+        PromptPoll:
           Type: Api
           Properties:
             Path: /prompt/poll
             Method: GET
-  RequireIDPromptAbort:
-    Type: AWS::Serverless::Function
-    Properties:
-      Runtime: python3.7
-      Handler: prompt.abort.run
-      Events:
-        HTTP:
+        PromptAbort:
           Type: Api
           Properties:
             Path: /prompt/abort

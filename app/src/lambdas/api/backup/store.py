@@ -34,10 +34,7 @@ async def handler(event, context, self_hosted_config=None):
     body = event.get('body')
 
     if method not in ('POST', ):
-        return {
-            'statusCode': 405,
-            'body': json.dumps({'message': 'Method Not Allowed'})
-        }
+        return 405, 'Method Not Allowed'
 
     json_data = json.loads(body)
     identifier = json_data.get('identifier')
@@ -54,17 +51,6 @@ async def handler(event, context, self_hosted_config=None):
                 # here you should add an async s3 method
                 pass
     except Exception as e:
-        return {
-            'statusCode': 500,
-            'body': json.dumps({'message': 'Internal Server Error', 'error': f'{e}'})
-        }
+        return 500, json.dumps({'message': 'Internal Server Error', 'error': f'{e}'})
 
-    return {
-        'statusCode': 200,
-        'body': json.dumps({'message': 'Data backed up'})
-    }
-
-
-def run(event, context):
-    loop = asyncio.get_event_loop()
-    return loop.run_until_complete(handler(event, context))
+    return 200, json.dumps({'message': 'Data backed up'})
