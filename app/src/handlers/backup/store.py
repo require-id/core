@@ -15,7 +15,7 @@ async def handler(event, context):
 
     return {
         'statusCode': 200,
-        'body': f'{method} – delete: {aws_request_id}'
+        'body': f'{method} – backup.store: {aws_request_id}'
     }
 
 

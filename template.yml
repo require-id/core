@@ -3,27 +3,99 @@ Transform: AWS::Serverless-2016-10-31
 
 Description: Store and restore backup functionality
 Resources:
-  RequireIDLoad:
+  RequireIDBackupLoad:
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.7
       CodeUri: ./app/src/handlers
-      Handler: load.run
+      Handler: backup.load.run
       Events:
         RequrieIDLoad:
           Type: Api
           Properties:
-            Path: /load
+            Path: /backup/load
             Method: GET
-  RequireIDStore:
+  RequireIDBackupStore:
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.7
       CodeUri: ./app/src/handlers
-      Handler: store.run
+      Handler: backup.store.run
       Events:
         RequrieIDLoad:
           Type: Api
           Properties:
-            Path: /store
+            Path: /backup/store
+            Method: POST
+  RequireIDBackupDelete:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      CodeUri: ./app/src/handlers
+      Handler: backup.delete.run
+      Events:
+        RequrieIDLoad:
+          Type: Api
+          Properties:
+            Path: /backup/delete
+            Method: POST
+  RequireIDAppPoll:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      CodeUri: ./app/src/handlers
+      Handler: app.poll.run
+      Events:
+        RequrieIDLoad:
+          Type: Api
+          Properties:
+            Path: /app/poll
             Method: GET
+  RequireIDAppResponse:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      CodeUri: ./app/src/handlers
+      Handler: app.response.run
+      Events:
+        RequrieIDLoad:
+          Type: Api
+          Properties:
+            Path: /app/response
+            Method: POST
+  RequireIDPromptNew:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      CodeUri: ./app/src/handlers
+      Handler: prompt.new.run
+      Events:
+        RequrieIDLoad:
+          Type: Api
+          Properties:
+            Path: /prompt/new
+            Method: POST
+  RequireIDPromptPoll:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      CodeUri: ./app/src/handlers
+      Handler: prompt.poll.run
+      Events:
+        RequrieIDLoad:
+          Type: Api
+          Properties:
+            Path: /prompt/poll
+            Method: GET
+  RequireIDPromptAbort:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.7
+      CodeUri: ./app/src/handlers
+      Handler: prompt.abort.run
+      Events:
+        RequrieIDLoad:
+          Type: Api
+          Properties:
+            Path: /prompt/abort
+            Method: POST

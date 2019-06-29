@@ -5,9 +5,8 @@ import json
 async def handler(event, context):
     aws_request_id = context.aws_request_id
     method = event.get('httpMethod')
-    body = event.get('body')
 
-    if method not in ('POST'):
+    if method not in ('HEAD', 'GET'):
         return {
             'statusCode': 405,
             'body': json.dumps({'message': 'Method Not Allowed'})
@@ -15,7 +14,7 @@ async def handler(event, context):
 
     return {
         'statusCode': 200,
-        'body': f'{method} – prompt: {aws_request_id}'
+        'body': f'{method} – app.poll: {aws_request_id}'
     }
 
 

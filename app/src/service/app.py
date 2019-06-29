@@ -6,7 +6,6 @@ import uuid
 
 import tomodachi
 
-from handlers.load import handler as load_handler
 from service.base import Base
 
 
@@ -47,15 +46,20 @@ class Service(Base):
         config_data = json.loads(os.getenv('CONFIG_DATA') or '{}')
         self.api_key = config_data.get('api_key')
 
-    @tomodachi.http('*', r'/(?P<function_name>[^/]+?)/?')
-    async def lambda_wrapper(self, request, function_name):
+    @tomodachi.http('*', r'/(?P<api>[^/]+?)/?(?P<function_name>[^/]+?)/?')
+    async def lambda_wrapper(self, request, api, function_name):
         api_key = request.headers.get('API-Key') or request.headers.get('X-API-Key')
         if api_key != self.api_key:
             return 403, await self.error(403)
 
+        api = re.sub(r'[^a-z0-9_]', '_', api)
         function_name = re.sub(r'[^a-z0-9_]', '_', function_name)
+
+        if not api or not function_name:
+            return 404, await self.error(404)
+
         try:
-            method_module = importlib.import_module(f'handlers.{function_name}')
+            method_module = importlib.import_module(f'handlers.{api}.{function_name}')
             func = getattr(method_module, 'handler', None)
         except ModuleNotFoundError:
             return 404, await self.error(404)
