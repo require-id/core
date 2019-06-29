@@ -5,7 +5,7 @@ import os
 import boto3
 
 BUCKET = None  # 'require-id-bucket'
-LOCAL_DIRECTORY = '/backup'
+LOCAL_DIRECTORY = '/app/backup'
 
 
 def delete_s3_backups(identifier):
