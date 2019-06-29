@@ -83,4 +83,4 @@ ADD app /app
 WORKDIR /app
 ENV PYTHONPATH=src
 
-CMD /bin/bash
+CMD tomodachi run src/service/app.py
