@@ -7,7 +7,7 @@ async def handler(event, context):
     method = event.get('httpMethod')
     body = event.get('body')
 
-    if method not in ('POST', ):
+    if method not in ('POST'):
         return {
             'statusCode': 405,
             'body': json.dumps({'message': 'Method Not Allowed'})
@@ -15,7 +15,7 @@ async def handler(event, context):
 
     return {
         'statusCode': 200,
-        'body': f'{method} – store: {aws_request_id}'
+        'body': f'{method} – prompt: {aws_request_id}'
     }
 
 

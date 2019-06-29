@@ -1,9 +1,16 @@
 import asyncio
+import json
 
 
 async def handler(event, context):
     aws_request_id = context.aws_request_id
     method = event.get('httpMethod')
+
+    if method not in ('GET', 'HEAD'):
+        return {
+            'statusCode': 405,
+            'body': json.dumps({'message': 'Method Not Allowed'})
+        }
 
     return {
         'statusCode': 200,

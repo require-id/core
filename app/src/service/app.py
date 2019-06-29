@@ -67,4 +67,7 @@ class Service(Base):
         context = LambdaContext()
 
         response = await func(event.as_dict(), context)
-        return response.get('statusCode'), response.get('body')
+        status_code = response.get('statusCode')
+        if status_code >= 400:
+            return status_code, await self.error(status_code)
+        return status_code, response.get('body')
