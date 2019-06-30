@@ -112,3 +112,5 @@ venv.bak/
 output.yml
 packaged.yml
 app/data/
+script/
+doc/
