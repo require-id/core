@@ -5,7 +5,7 @@ import re
 import uuid
 
 from app.shared.data import load, store
-from app.shared.utils import convert_timestamp, validate_hash, validate_validation_code, validate_url
+from app.shared.utils import convert_timestamp, get_payload_value, validate_base64, validate_hash, validate_validation_code, validate_url
 
 
 async def handler(event, context, self_hosted_config=None):
@@ -14,18 +14,20 @@ async def handler(event, context, self_hosted_config=None):
     except Exception:
         return 400, json.dumps({'error': 'Invalid payload'})
 
-    secret_hash = str(payload.get('secretHash', '')).lower() or str(payload.get('secrethash', '')).lower() or str(payload.get('secret_hash', '')).lower() or str(payload.get('hash', '')).lower()
-    ip = str(payload.get('ip', '')) or None
-    issuer = str(payload.get('issuer', '')) or None
-    username = str(payload.get('username', '')) or None
-    validation_code = str(payload.get('validationCode', '')) or str(payload.get('validationcode', '')) or str(payload.get('validation_code', '')) or None
-    sign_key = str(payload.get('signKey', '')) or str(payload.get('signkey', '')) or str(payload.get('sign_key', '')) or None
-    timestamp = str(payload.get('timestamp', '')) or None
-    expire = str(payload.get('expire', '')) or 90
-    webhook_url = str(payload.get('webhookUrl', '')) or str(payload.get('webhookurl', '')) or str(payload.get('webhook_url', '')) or None
+    secret_hash = get_payload_value(payload, ('secretHash', 'secrethash', 'secret_hash', 'hash'), '').lower()
+    timestamp = get_payload_value(payload, 'timestamp')
+    expire = get_payload_value(payload, 'expire', 90)
 
-    if webhook_url and not validate_url(webhook_url):
-        return 400, json.dumps({'error': 'Invalid value for webhookUrl'})
+    ip = get_payload_value(payload, 'ip')
+    location = get_payload_value(payload, 'location')
+    issuer = get_payload_value(payload, 'issuer')
+    username = get_payload_value(payload, 'username')
+    validation_code = get_payload_value(payload, ('validationCode', 'validationcode', 'validation_code'), '').upper() or None
+    sign_key = get_payload_value(payload, ('signKey', 'signkey', 'sign_key'))
+    webhook_url = get_payload_value(payload, ('webhookUrl', 'webhookurl', 'webhook_url'))
+
+    # encryptedData may all contain: ip, location, issuer, username, validationCode, signKey and webhookUrl
+    encrypted_data = get_payload_value(payload, ('encryptedData', 'encrypteddata', 'encrypted_data'))
 
     try:
         timestamp_at = convert_timestamp(timestamp) if timestamp else datetime.datetime.now()
@@ -53,15 +55,22 @@ async def handler(event, context, self_hosted_config=None):
     if validation_code and not validate_validation_code(validation_code):
         return 400, json.dumps({'error': 'Invalid value for validationCode'})
 
-    stored_data = json.loads(await load(secret_hash, 'user', self_hosted_config=self_hosted_config))
-    if stored_data:
-        stored_expire_at = convert_timestamp(stored_data.get('expireAt'))
-        if stored_data.get('state') in ('pending', 'received') and stored_expire_at >= datetime.datetime.now():
-            return 406, json.dumps({'error': 'Prompt already pending'})
+    if webhook_url and not validate_url(webhook_url):
+        return 400, json.dumps({'error': 'Invalid value for webhookUrl'})
 
-    location = 'Unknown'
+    if encrypted_data and not validate_base64(encrypted_data):
+        return 400, json.dumps({'error': 'encryptedData must be base64 endcoded'})
+
+    try:
+        stored_data = json.loads(await load(secret_hash, 'user', self_hosted_config=self_hosted_config))
+        if stored_data:
+            stored_expire_at = convert_timestamp(stored_data.get('expireAt'))
+            if stored_data.get('state') in ('pending', 'received') and stored_expire_at >= datetime.datetime.now():
+                return 406, json.dumps({'error': 'Prompt already pending'})
+    except Exception:
+        pass
+
     prompt_identifier = str(uuid.uuid4())
-    response_code = str(uuid.uuid4())
 
     store_data = {
         'promptIdentifier': prompt_identifier,
@@ -73,6 +82,7 @@ async def handler(event, context, self_hosted_config=None):
         'signKey': sign_key,
         'ip': ip,
         'location': location,
+        'encryptedData': encrypted_data,
         'timestamp': timestamp_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
         'expireAt': expire_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
         'respondedAt': None,

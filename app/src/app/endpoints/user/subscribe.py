@@ -12,9 +12,9 @@ async def handler(event, context, self_hosted_config=None):
     except Exception:
         return 400, json.dumps({'error': 'Invalid payload'})
 
-    secret_hash = str(payload.get('secretHash', '')).lower() or str(payload.get('secrethash', '')).lower() or str(payload.get('secret_hash', '')).lower() or str(payload.get('hash', '')).lower()
-    timestamp = str(payload.get('timestamp', '')) or None
-    device_token = str(payload.get('deviceToken', '')) or str(payload.get('devicetoken', '')) or str(payload.get('device_token', '')) or str(payload.get('token', '')) or None
+    secret_hash = get_payload_value(payload, ('secretHash', 'secrethash', 'secret_hash', 'hash'), '').lower()
+    timestamp = get_payload_value(payload, 'timestamp')
+    device_token = get_payload_value(payload, ('deviceToken', 'devicetoken', 'device_token', 'token'))
 
     if not validate_hash(secret_hash):
         return 400, json.dumps({'error': 'Invalid value for secretHash'})

@@ -72,3 +72,26 @@ def validate_base64(value):
         return base64.b64encode(base64.b64decode(value)) == value
     except Exception:
         return False
+
+
+def get_query_value(event, keys, default=None):
+    if isinstance(keys, str):
+        keys = (keys, )
+
+    query = event.get('queryStringParameters', {})
+    for key in keys:
+        if str(query.get(key, '')):
+            return str(query.get(key, ''))
+
+    return default
+
+
+def get_payload_value(payload, keys, default=None):
+    if isinstance(keys, str):
+        keys = (keys, )
+
+    for key in keys:
+        if str(payload.get(key, '')):
+            return str(payload.get(key, ''))
+
+    return default
