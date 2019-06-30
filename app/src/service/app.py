@@ -66,6 +66,7 @@ class Service(Base):
         ('user', 'poll'): ('GET', True),
         ('user', 'response'): ('POST', True),
         ('user', 'subscribe'): ('POST', True),
+        ('user', 'unsubscribe'): ('POST', True),
         ('backup', 'store'): ('POST', True),
         ('backup', 'load'): ('GET', True),
         ('backup', 'delete'): ('DELETE', True),

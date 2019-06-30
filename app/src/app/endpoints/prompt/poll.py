@@ -1,8 +1,18 @@
 import asyncio
 import json
 
+from app.shared.utils import validate_uuid
+
 
 async def handler(event, context):
-    aws_request_id = context.aws_request_id
+    prompt_identifier = str(event.get('queryStringParameters', {}).get('promptIdentifier', '')).lower()
 
-    return 200, f'prompt.poll: {aws_request_id}'
+    if not validate_uuid(prompt_identifier):
+        return 400, json.dumps({'error': 'Invalid value for promptIdentifier'})
+
+    # Debug data for testing purposes
+    data = {
+        'state': 'pending'
+    }
+
+    return 200, json.dumps(data)

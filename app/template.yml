@@ -109,6 +109,20 @@ Resources:
                 credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
                 security:
                 - ApiKeyAuth: []
+          /user/unsubscribe:
+            x-amazon-apigateway-auth:
+              type: NONE_KEY
+            post:
+              security:
+              - ApiKeyAuth: []
+              x-amazon-apigateway-integration:
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequireIDLambda.Arn}/invocations"
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy
+                credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
+                security:
+                - ApiKeyAuth: []
           /backup/store:
             x-amazon-apigateway-auth:
               type: NONE_KEY
@@ -259,6 +273,12 @@ Resources:
           Type: Api
           Properties:
             Path: /user/subscribe
+            RestApiId: !Ref RequireIDGateway
+            Method: POST
+        UserUnsubscribe:
+          Type: Api
+          Properties:
+            Path: /user/unsubscribe
             RestApiId: !Ref RequireIDGateway
             Method: POST
         BackupStore:

@@ -1,9 +1,13 @@
 import asyncio
 import json
 
+from app.shared.utils import validate_uuid
+
 
 async def handler(event, context):
-    aws_request_id = context.aws_request_id
-    body = json.loads(event.get('body'))
+    prompt_identifier = str(event.get('queryStringParameters', {}).get('promptIdentifier', '')).lower()
 
-    return 200, f'prompt.abort: {aws_request_id}'
+    if not validate_uuid(prompt_identifier):
+        return 400, json.dumps({'error': 'Invalid value for promptIdentifier'})
+
+    return 200, json.dumps({'message': 'Prompt aborted'})
