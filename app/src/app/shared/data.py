@@ -11,7 +11,7 @@ try:
 except ImportError:
     pass
 
-BUCKETS = json.loads(os.getenv('BUCKETS', '{}'))
+BUCKETS = json.loads(os.getenv('BUCKETS', '{"backup":"require-id"}'))
 DATA_PATH = os.path.join(os.path.abspath(os.sep), 'app', 'data')
 
 
@@ -34,7 +34,7 @@ def _s3_client(self_hosted_config):
             region_name='us-west-1',
             aws_secret_access_key=self_hosted_config.aws_secret_access_key,
             aws_access_key_id=self_hosted_config.aws_access_key_id,
-            endpoint=self_hosted_config.aws_s3_endpoint
+            endpoint_url=self_hosted_config.aws_s3_endpoint
         )
     except Exception:
         session = botocore.session.get_session()
@@ -58,18 +58,22 @@ async def _delete_s3(identifier, file_type, self_hosted_config, **kwargs):
     key = f'{file_type}/{identifier}'
 
     client = _s3_client(self_hosted_config)
-    versions = client.list_object_versions(Bucket=bucket, Prefix=key)
-    if isinstance(versions, Awaitable):
-        versions = await versions
+    delete_function = client.delete_object(
+        Bucket=bucket,
+        Key=key
+    )
+    if isinstance(delete_function, Awaitable):
+        await delete_function
 
-    for object_version in versions.get('Versions'):
-        delete_function = client.delete_object(
-            Bucket=bucket,
-            Key=key,
-            VersionId=object_version.get('VersionId')
-        )
-        if isinstance(delete_function, Awaitable):
-            await delete_function
+    if not file_type == 'backup':
+        return
+
+    delete_function = client.delete_object(
+        Bucket=bucket,
+        Key=f'{key}.previousver'
+    )
+    if isinstance(delete_function, Awaitable):
+        await delete_function
 
 
 def _delete_local(identifier, file_type, **kwargs):
@@ -124,10 +128,24 @@ async def store(identifier, file_type, data, self_hosted_config):
 
 
 async def _store_s3(identifier, file_type, self_hosted_config, data, **kwargs):
+    bucket = BUCKETS.get(file_type)
+    key = f'{file_type}/{identifier}'
     client = _s3_client(self_hosted_config)
+
+    if file_type == 'backup':
+        try:
+            copy_object = client.copy_object(Bucket=bucket, Key=f'{key}.previousver', CopySource={'Bucket': bucket, 'Key': key})
+            if isinstance(copy_object, Awaitable):
+                await copy_object
+        except botocore.exceptions.ClientError as e:
+            if e.response['Error']['Code'] == 'NoSuchKey':
+                pass
+            else:
+                raise e
+
     put_object = client.put_object(
-        Bucket=BUCKETS.get(file_type),
-        Key=f'{file_type}/{identifier}',
+        Bucket=bucket,
+        Key=key,
         Body=data
     )
     if isinstance(put_object, Awaitable):
@@ -137,11 +155,13 @@ async def _store_s3(identifier, file_type, self_hosted_config, data, **kwargs):
 def _store_local(identifier, file_type, data, **kwargs):
     if not os.path.isdir(DATA_PATH):
         os.mkdir(DATA_PATH)
+
     directory = os.path.join(DATA_PATH, file_type)
     if not os.path.isdir(directory):
         os.mkdir(directory)
+
     file_path = os.path.join(directory, identifier)
-    if os.path.isfile(file_path):
+    if os.path.isfile(file_path) and file_type == 'backup':
         shutil.copyfile(file_path, f'{file_path}.previousver')
 
     with open(file_path, 'wb') as backup_file:
