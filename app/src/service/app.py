@@ -52,15 +52,15 @@ class SelfHostedConfig:
 class Service(Base):
     name = 'require-id'
     routes = {
+        ('api', 'status'): ('GET', True),
         ('app', 'poll'): ('GET', True),
         ('app', 'response'): ('POST', True),
-        ('app', 'status'): ('GET', True),
         ('backup', 'store'): ('POST', True),
         ('backup', 'load'): ('GET', True),
-        ('backup', 'delete'): ('POST', True),
+        ('backup', 'delete'): ('DELETE', True),
         ('prompt', 'new'): ('POST', False),
         ('prompt', 'poll'): ('GET', False),
-        ('prompt', 'abort'): ('POST', False)
+        ('prompt', 'abort'): ('DELETE', False)
     }
 
     def __init__(self):

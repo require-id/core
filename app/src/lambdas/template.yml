@@ -53,6 +53,20 @@ Resources:
               name: x-api-key
               in: header
         paths:
+          /api/status:
+            x-amazon-apigateway-auth:
+              type: NONE_KEY
+            get:
+              security:
+              - ApiKeyAuth: []
+              x-amazon-apigateway-integration:
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequireIDLambda.Arn}/invocations"
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy
+                credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
+                security:
+                - ApiKeyAuth: []
           /app/poll:
             x-amazon-apigateway-auth:
               type: NONE_KEY
@@ -71,20 +85,6 @@ Resources:
             x-amazon-apigateway-auth:
               type: NONE_KEY
             post:
-              security:
-              - ApiKeyAuth: []
-              x-amazon-apigateway-integration:
-                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequireIDLambda.Arn}/invocations"
-                passthroughBehavior: when_no_match
-                httpMethod: POST
-                type: aws_proxy
-                credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
-                security:
-                - ApiKeyAuth: []
-          /app/status:
-            x-amazon-apigateway-auth:
-              type: NONE_KEY
-            get:
               security:
               - ApiKeyAuth: []
               x-amazon-apigateway-integration:
@@ -136,7 +136,7 @@ Resources:
           /backup/delete:
             x-amazon-apigateway-auth:
               type: NONE_KEY
-            post:
+            delete:
               security:
               - ApiKeyAuth: []
               parameters:
@@ -179,7 +179,7 @@ Resources:
                 type: aws_proxy
                 credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
           /prompt/abort:
-            post:
+            delete:
               parameters:
               - name: proxy
                 in: path
@@ -222,6 +222,12 @@ Resources:
       Runtime: python3.7
       Handler: router.run
       Events:
+        ApiStatus:
+          Type: Api
+          Properties:
+            Path: /api/status
+            RestApiId: !Ref RequireIDGateway
+            Method: GET
         AppPoll:
           Type: Api
           Properties:
@@ -234,12 +240,6 @@ Resources:
             Path: /app/response
             RestApiId: !Ref RequireIDGateway
             Method: POST
-        AppStatus:
-          Type: Api
-          Properties:
-            Path: /app/status
-            RestApiId: !Ref RequireIDGateway
-            Method: GET
         BackupStore:
           Type: Api
           Properties:
@@ -257,7 +257,7 @@ Resources:
           Properties:
             Path: /backup/delete
             RestApiId: !Ref RequireIDGateway
-            Method: POST
+            Method: DELETE
         PromptNew:
           Type: Api
           Properties:
@@ -275,4 +275,4 @@ Resources:
           Properties:
             Path: /prompt/abort
             RestApiId: !Ref RequireIDGateway
-            Method: POST
+            Method: DELETE
