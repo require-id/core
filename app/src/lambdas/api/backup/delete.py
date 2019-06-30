@@ -1,8 +1,9 @@
-import asyncio
 import json
 import os
 
 import boto3
+
+from lambdas.exceptions import InvalidConfigError
 
 BUCKET = None  # 'require-id-bucket'
 LOCAL_DIRECTORY = '/app/backup'
@@ -35,21 +36,31 @@ def delete_local_backups(identifier):
 
 async def handler(event, context, self_hosted_config=None):
     aws_request_id = context.aws_request_id
+
+    await runner(
+        event,
+        context,
+        self_hosted_config,
+        delete_s3_backups,
+        delete_local_backups,
+        delete_s3_backups_async
+    )
+
+    return 200, f'backup.delete: {aws_request_id}'
+
+
+async def runner(event, context, self_hosted_config, lambda_function, docker_volume_function, async_function):
     body = event.get('body')
 
     json_data = json.loads(body)
     identifier = json_data.get('identifier')
-
-    try:
-        if not self_hosted_config:
-                delete_s3_backups(identifier)
+    if not self_hosted_config:
+            lambda_function(identifier)
+    else:
+        if self_hosted_config.backup_storage_method == 'docker_volume':
+            docker_volume_function(identifier)
+        elif self_hosted_config.backup_storage_method == 's3':
+            await async_function(identifier)
+            pass
         else:
-            if self_hosted_config.backup_storage_method == 'local':
-                delete_local_backups(identifier)
-            elif self_hosted_config.backup_storage_method == 's3':
-                # here you should add an async s3 method
-                pass
-    except Exception as e:
-        return 500, json.dumps({'message': 'Internal Server Error', 'error': f'{e}'})
-
-    return 200, f'backup.delete: {aws_request_id}'
+            raise InvalidConfigError

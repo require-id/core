@@ -5,7 +5,7 @@
         "aws_secret_access_key": "abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcde"
     },
     "backups": {
-        "storage_method": "local || s3",
+        "storage_method": "docker_volume || s3",
         "s3_bucket": null
     }
 }
