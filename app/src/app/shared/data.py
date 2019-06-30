@@ -4,9 +4,12 @@ import os
 import shutil
 from typing import Awaitable
 
-import aiobotocore
 import botocore
 
+try:
+    import aiobotocore
+except ImportError:
+    pass
 
 BUCKETS = json.loads(os.getenv('BUCKETS', '{}'))
 DATA_PATH = os.path.join(os.path.abspath(os.sep), 'app', 'data')
