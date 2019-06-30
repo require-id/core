@@ -7,7 +7,7 @@ import uuid
 from app.shared.utils import convert_timestamp, validate_hash, validate_validation_code, validate_url
 
 
-async def handler(event, context):
+async def handler(event, context, self_hosted_config=None):
     try:
         payload = json.loads(event.get('body'))
     except Exception:
@@ -58,8 +58,8 @@ async def handler(event, context):
         'validationCode': validation_code,
         'ip': ip,
         'location': location,
-        'timestamp': timestamp_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-        'expireAt': expire_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        'timestamp': timestamp_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
+        'expireAt': expire_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
         'approveUrl': 'https://api.require.id/poll/response',
         'webhookUrl': webhook_url
     }
