@@ -4,6 +4,7 @@ import json
 import re
 import uuid
 
+from app.shared.data import load, store
 from app.shared.utils import convert_timestamp, validate_hash, validate_validation_code, validate_url
 
 
@@ -45,9 +46,8 @@ async def handler(event, context, self_hosted_config=None):
     if validation_code and not validate_validation_code(validation_code):
         return 400, json.dumps({'error': 'Invalid value for validationCode'})
 
-    prompt_identifier = str(uuid.uuid4())
-
     location = 'Unknown'
+    prompt_identifier = str(uuid.uuid4())
 
     store_data = {
         'promptIdentifier': prompt_identifier,
@@ -63,6 +63,9 @@ async def handler(event, context, self_hosted_config=None):
         'approveUrl': 'https://api.require.id/poll/response',
         'webhookUrl': webhook_url
     }
+
+    await store(secret_hash, 'user', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
+    await store(prompt_identifier, 'prompt', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
 
     data = {
         'promptIdentifier': prompt_identifier

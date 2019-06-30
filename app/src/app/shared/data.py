@@ -15,7 +15,7 @@ BUCKETS = json.loads(os.getenv('BUCKETS', '{}'))
 DATA_PATH = os.path.join(os.path.abspath(os.sep), 'app', 'data')
 
 
-async def router(identifier, self_hosted_config, file_type, s3_function, docker_volume_function, data=None):
+async def router(identifier, file_type, self_hosted_config, s3_function, docker_volume_function, data=None):
     '''
     This function should probably be named soemthing better.
     '''
@@ -43,11 +43,11 @@ def _s3_client(self_hosted_config):
     return client
 
 
-async def delete(identifier, file_type, self_hosted_config):
+async def delete(identifier, file_type, self_hosted_config=None):
     await router(
         identifier,
-        self_hosted_config,
         file_type=file_type,
+        self_hosted_config=self_hosted_config,
         s3_function=_delete_s3,
         docker_volume_function=_delete_local
     )
@@ -84,11 +84,11 @@ def _delete_local(identifier, file_type, **kwargs):
         os.remove(previousver_file_path)
 
 
-async def load(identifier, file_type, self_hosted_config):
+async def load(identifier, file_type, self_hosted_config=None):
     return await router(
         identifier,
-        self_hosted_config,
         file_type=file_type,
+        self_hosted_config=self_hosted_config,
         s3_function=_load_s3,
         docker_volume_function=_load_local
     )
@@ -112,11 +112,11 @@ def _load_local(identifier, file_type, **kwargs):
             return backup_file.read()
 
 
-async def store(identifier, file_type, data, self_hosted_config):
+async def store(identifier, file_type, data, self_hosted_config=None):
     await router(
         identifier,
-        self_hosted_config,
         file_type=file_type,
+        self_hosted_config=self_hosted_config,
         s3_function=_store_s3,
         docker_volume_function=_store_local,
         data=data
