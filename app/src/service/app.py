@@ -55,6 +55,7 @@ class Service(Base):
         ('api', 'status'): ('GET', True),
         ('app', 'poll'): ('GET', True),
         ('app', 'response'): ('POST', True),
+        ('app', 'subscribe'): ('POST', True),
         ('backup', 'store'): ('POST', True),
         ('backup', 'load'): ('GET', True),
         ('backup', 'delete'): ('DELETE', True),
