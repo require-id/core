@@ -53,6 +53,12 @@ async def handler(event, context, self_hosted_config=None):
     if validation_code and not validate_validation_code(validation_code):
         return 400, json.dumps({'error': 'Invalid value for validationCode'})
 
+    stored_data = json.loads(await load(secret_hash, 'user', self_hosted_config=self_hosted_config))
+    if stored_data:
+        stored_expire_at = convert_timestamp(stored_data.get('expireAt'))
+        if stored_data.get('state') in ('pending', 'received') and stored_expire_at >= datetime.datetime.now():
+            return 406, json.dumps({'error': 'Prompt already pending'})
+
     location = 'Unknown'
     prompt_identifier = str(uuid.uuid4())
     response_code = str(uuid.uuid4())
@@ -79,7 +85,9 @@ async def handler(event, context, self_hosted_config=None):
     await store(secret_hash, 'user', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
 
     data = {
-        'promptIdentifier': prompt_identifier
+        'promptIdentifier': prompt_identifier,
+        'state': store_data.get('state'),
+        'expireAt': store_data.get('expireAt')
     }
 
     return 200, json.dumps(data)

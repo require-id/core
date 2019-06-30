@@ -100,6 +100,6 @@ class Service(Base):
         self_hosted_config = SelfHostedConfig(self.config)
 
         status_code, body = await router.handler(await event.as_dict(), context, self_hosted_config=self_hosted_config)
-        if status_code >= 400 and status_code not in (400, 404):
+        if status_code >= 400 and status_code not in (400, 404, 406):
             return status_code, await self.error(status_code)
         return status_code, body

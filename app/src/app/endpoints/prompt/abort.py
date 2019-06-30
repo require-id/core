@@ -14,14 +14,19 @@ async def handler(event, context, self_hosted_config=None):
     stored_data = json.loads(await load(prompt_identifier, 'prompt', self_hosted_config=self_hosted_config))
 
     if stored_data.get('state') not in ('pending', 'received'):
-        return 404, json.dumps({'error': 'Prompt is not in pending state'})
+        return 406, json.dumps({'error': 'Prompt is not in pending state'})
 
     secret_hash = stored_data.get('secretHash')
 
     store_data = dict(stored_data)
-    stored_data['state'] = 'aborted'
+    store_data['state'] = 'aborted'
 
     await store(prompt_identifier, 'prompt', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
     await store(secret_hash, 'user', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
 
-    return 200, json.dumps({'message': 'Prompt aborted'})
+    data = {
+        'promptIdentifier': prompt_identifier,
+        'state': store_data.get('state')
+    }
+
+    return 200, json.dumps(data)
