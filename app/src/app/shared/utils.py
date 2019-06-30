@@ -1,3 +1,4 @@
+import base64
 import datetime
 import re
 
@@ -64,3 +65,10 @@ def validate_url(value):
 
 def validate_device_token(value):
     return True
+
+
+def validate_base64(value):
+    try:
+        return base64.b64encode(base64.b64decode(value)) == value
+    except Exception:
+        return False
