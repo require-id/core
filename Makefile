@@ -82,11 +82,3 @@ sam_api:
 deploy:
 	sam package --template-file app/template.yml --profile ${AWS_PROFILE} --s3-bucket ${AWS_LAMBDA_S3} --region ${AWS_REGION} --output-template-file app/packaged.yml
 	sam deploy --profile ${AWS_PROFILE} --region ${AWS_REGION} --template-file app/packaged.yml --stack-name ${AWS_STACK} --capabilities CAPABILITY_IAM
-
-s3up:
-	docker network create --driver bridge requireid 2> /dev/null &> /dev/null || true
-	docker run -ti -d -p 4712:4572 --network=requireid -e MINIO_ACCESS_KEY=AKIAIXXXXXXREQUIREID -e MINIO_SECRET_KEY=abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcde --name require-s3 minio/minio:RELEASE.2019-05-14T23-57-45Z
-
-s3down:
-	docker stop require-s3
-	docker rm require-s3
