@@ -82,7 +82,6 @@ RUN poetry install --no-dev
 
 ADD app /app
 WORKDIR /app
-RUN mkdir -p /app/data/prompt /app/data/backup
 ENV PYTHONPATH=src
 
 CMD tomodachi run src/service/app.py
