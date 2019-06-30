@@ -1,7 +1,5 @@
-import importlib
 import json
 import os
-import re
 import uuid
 
 import tomodachi
@@ -32,7 +30,7 @@ class LambdaEvent:
             'headers': dict(self.headers),
             'multiValueHeaders': {k: [v] for k, v in self.headers.items()},
             'queryStringParameters': {k: v for k, v in self.query.items()} if self.query else None,
-            'multiValueQueryStringParameters': {k: [v] for k, v in self.query.items()}  if self.query else None,
+            'multiValueQueryStringParameters': {k: [v] for k, v in self.query.items()} if self.query else None,
             'pathParameters': None,
             'stageVariables': None,
             'requestContext': {
@@ -57,9 +55,7 @@ class SelfHostedConfig:
         self.aws_access_key_id = config_data.get('aws', {}).get('aws_access_key_id')
         self.aws_secret_access_key = config_data.get('aws', {}).get('aws_secret_access_key')
         self.aws_s3_endpoint = config_data.get('endpoints', {}).get('s3')
-
-        self.backup_storage_method = config_data.get('backups', {}).get('storage_method')
-        self.backup_s3_bucket = config_data.get('backups', {}).get('s3_bucket')
+        self.storage_method = config_data.get('storage_method')
 
 
 class Service(Base):

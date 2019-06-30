@@ -1,14 +1,9 @@
 {
     "api_key": "exampleexampleexampleexampleexample00000",
+    "storage_method": "docker_volume || s3",
     "aws": {
         "aws_access_key_id": "AKIAXXXXXXXREQUESTID",
         "aws_secret_access_key": "abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcde"
-    },
-    "backup": {
-        "storage_method": "docker_volume || s3"
-    },
-    "prompt": {
-        "s3_bucket": null
     },
     "endpoints": {
         "s3": null
