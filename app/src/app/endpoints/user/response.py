@@ -1,6 +1,8 @@
 import asyncio
+import datetime
 import json
 
+from app.shared.data import load, store
 from app.shared.utils import convert_timestamp, validate_hash
 
 
@@ -12,11 +14,15 @@ async def handler(event, context, self_hosted_config=None):
 
     secret_hash = str(payload.get('secretHash', '')).lower() or str(payload.get('secrethash', '')).lower() or str(payload.get('secret_hash', '')).lower() or str(payload.get('hash', '')).lower()
     timestamp = str(payload.get('timestamp', '')) or None
-    validation_code = str(payload.get('validationCode', '')) or str(payload.get('validationcode', '')) or str(payload.get('validation_code', '')) or str(payload.get('code', '')) or None
+    validation_code = str(payload.get('validationCode', '')) or str(payload.get('validationcode', '')) or str(payload.get('validation_code', '')) or None
+    response_hash = str(payload.get('responseHash', '')) or str(payload.get('responsehash', '')) or str(payload.get('response_hash', '')) or None
     approve = payload.get('approve')
 
     if not validate_hash(secret_hash):
         return 400, json.dumps({'error': 'Invalid value for secretHash'})
+
+    if response_hash and not validate_hash(response_hash):
+        return 400, json.dumps({'error': 'Invalid value for responseHash'})
 
     try:
         timestamp_at = convert_timestamp(timestamp) if timestamp else datetime.datetime.now()
@@ -31,25 +37,26 @@ async def handler(event, context, self_hosted_config=None):
         except Exception:
             return 400, json.dumps({'error': 'Invalid value for approve'})
 
-    # Debug data for testing purposes
-    stored_data = {
-        'promptIdentifier': None,
-        'state': 'pending',
-        'issuer': 'The High Table',
-        'username': 'john.wick@thecontentinental.hotel',
-        'validationCode': 'KC3X9',
-        'ip': '1.1.1.1',
-        'location': 'Unknown',
-        'timestamp': '2019-06-30T17:20:00.000000Z',
-        'expireAt': '2019-06-30T17:21:30.000000Z',
-        'approveUrl': 'https://api.require.id/poll/response',
-        'webhookUrl': None
-    }
+    stored_data = json.loads(await load(secret_hash, 'user', self_hosted_config=self_hosted_config))
+    expire_at = convert_timestamp(stored_data.get('expireAt'))
+    expected_validation_code = stored_data.get('validationCode')
+    prompt_identifier = stored_data.get('promptIdentifier')
 
-    expected_validation_code = data.get('validationCode')
+    if stored_data.get('state') not in ('pending', 'received'):
+        return 404, json.dumps({'error': 'No available prompt'})
+
+    if expire_at < datetime.datetime.now():
+        return 404, json.dumps({'error': 'No available prompt'})
+
     if expected_validation_code and validation_code.upper() != expected_validation_code.upper():
         return 400, json.dumps({'error': 'Invalid value for validationCode'})
 
-    stored_data['state'] = 'approved' if approve else 'denied'
+    store_data = dict(stored_data)
+    store_data['state'] = 'approved' if approve else 'denied'
+    store_data['respondedAt'] = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+    store_data['responseHash'] = response_hash
+
+    await store(prompt_identifier, 'prompt', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
+    await store(secret_hash, 'user', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
 
     return 200, json.dumps({'message': 'Prompt responded'})
