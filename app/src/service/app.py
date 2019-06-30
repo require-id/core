@@ -7,7 +7,7 @@ import uuid
 import tomodachi
 
 from service.base import Base
-from lambdas.router import handler
+from app import router
 
 
 class LambdaContext:
@@ -101,7 +101,7 @@ class Service(Base):
         context = LambdaContext()
         self_hosted_config = SelfHostedConfig(self.config)
 
-        status_code, body = await handler(event.as_dict(), context, self_hosted_config=self_hosted_config)
+        status_code, body = await router.handler(event.as_dict(), context, self_hosted_config=self_hosted_config)
         if status_code >= 400:
             return status_code, await self.error(status_code)
         return status_code, body

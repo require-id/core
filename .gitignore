@@ -109,4 +109,6 @@ venv.bak/
 /config.json
 /config-*.json
 .vscode
+output.yml
+packaged.yml
 

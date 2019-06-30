@@ -74,8 +74,8 @@ poetry_remove:
 	make build
 
 sam_api:
-	sam local start-api --profile ${AWS_PROFILE} --template app/src/lambdas/template.yml
+	sam local start-api --profile ${AWS_PROFILE} --template app/template.yml
 
 deploy:
-	sam package --template-file app/src/lambdas/template.yml --profile ${AWS_PROFILE} --s3-bucket ${AWS_LAMBDA_S3} --region ${AWS_REGION} --output-template-file app/src/lambdas/packaged.yml
-	sam deploy --profile ${AWS_PROFILE} --region ${AWS_REGION} --template-file app/src/lambdas/packaged.yml --stack-name ${AWS_STACK} --capabilities CAPABILITY_IAM
+	sam package --template-file app/template.yml --profile ${AWS_PROFILE} --s3-bucket ${AWS_LAMBDA_S3} --region ${AWS_REGION} --output-template-file app/packaged.yml
+	sam deploy --profile ${AWS_PROFILE} --region ${AWS_REGION} --template-file app/packaged.yml --stack-name ${AWS_STACK} --capabilities CAPABILITY_IAM

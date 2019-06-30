@@ -3,7 +3,7 @@ import importlib
 import json
 import re
 
-from shared.exceptions import InvalidConfigError
+from app.shared.exceptions import InvalidConfigError
 
 
 async def handler(event, context, self_hosted_config=None):
@@ -23,12 +23,10 @@ async def handler(event, context, self_hosted_config=None):
 
     method_module = None
     try:
-        method_module = importlib.import_module(f'api.{api}.{function_name}')
+        method_module = importlib.import_module(f'app.endpoints.{api}.{function_name}')
     except ModuleNotFoundError:
-        try:
-            method_module = importlib.import_module(f'lambdas.api.{api}.{function_name}')
-        except ModuleNotFoundError:
-            return unknown_api_response
+        raise
+        return unknown_api_response
 
     func = getattr(method_module, 'handler', None)
     return await func(event, context)
@@ -38,10 +36,11 @@ def run(event, context):
     loop = asyncio.get_event_loop()
     try:
         status_code, body = loop.run_until_complete(handler(event, context))
-    except InvalidConfigError:
-        status_code = 500
-        body = json.dumps({'message': 'Invalid config.'})
+#    except InvalidConfigError:
+#        status_code = 500
+#        body = json.dumps({'message': 'Invalid config.'})
     except Exception:
+        raise
         status_code = 500
         body = json.dumps({'message': 'Internal Server Error'})
 
