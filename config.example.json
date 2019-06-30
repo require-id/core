@@ -2,7 +2,7 @@
     "api_key": "exampleexampleexampleexampleexample00000",
     "storage_method": "docker_volume || s3",
     "aws": {
-        "aws_access_key_id": "AKIAXXXXXXXREQUESTID",
+        "aws_access_key_id": "AKIAIXXXXXXREQUIREID",
         "aws_secret_access_key": "abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcde"
     },
     "endpoints": {
