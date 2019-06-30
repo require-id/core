@@ -4,7 +4,7 @@ import json
 from app.shared.utils import validate_hash
 
 
-async def handler(event, context):
+async def handler(event, context, self_hosted_config=None):
     secret_hash = str(event.get('queryStringParameters', {}).get('secretHash', '')).lower() or str(event.get('queryStringParameters', {}).get('secrethash', '')).lower() or str(event.get('queryStringParameters', {}).get('secret_hash', '')).lower() or str(event.get('queryStringParameters', {}).get('hash', '')).lower()
 
     if not validate_hash(secret_hash):

@@ -4,7 +4,7 @@ import json
 from app.shared.utils import convert_timestamp, validate_hash, validate_device_token
 
 
-async def handler(event, context):
+async def handler(event, context, self_hosted_config=None):
     try:
         payload = json.loads(event.get('body'))
     except Exception:

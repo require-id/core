@@ -4,7 +4,7 @@ import json
 from app.shared.utils import validate_uuid
 
 
-async def handler(event, context):
+async def handler(event, context, self_hosted_config=None):
     prompt_identifier = str(event.get('queryStringParameters', {}).get('promptIdentifier', '')).lower() or str(event.get('queryStringParameters', {}).get('promptidentifier', '')).lower() or str(event.get('queryStringParameters', {}).get('prompt_identifier', '')).lower() or str(event.get('queryStringParameters', {}).get('identifier', '')).lower()
 
     if not validate_uuid(prompt_identifier):
