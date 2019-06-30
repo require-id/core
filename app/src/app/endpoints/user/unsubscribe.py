@@ -1,6 +1,8 @@
 import asyncio
 import json
 
+from app.shared.utils import convert_timestamp, validate_hash, validate_device_token
+
 
 async def handler(event, context):
     try:
@@ -8,12 +10,15 @@ async def handler(event, context):
     except Exception:
         return 400, json.dumps({'error': 'Invalid payload'})
 
-    secret_hash = str(payload.get('secretHash', '')).lower()
+    secret_hash = str(payload.get('secretHash', '')).lower() or str(payload.get('secrethash', '')).lower() or str(payload.get('secret_hash', '')).lower() or str(payload.get('hash', '')).lower()
     timestamp = str(payload.get('timestamp', '')) or None
-    push_token = str(payload.get('deviceToken', '')) or None
+    device_token = str(payload.get('deviceToken', '')) or str(payload.get('devicetoken', '')) or str(payload.get('device_token', '')) or str(payload.get('token', '')) or None
 
-    if not validate_hash(secrethash):
+    if not validate_hash(secret_hash):
         return 400, json.dumps({'error': 'Invalid value for secretHash'})
+
+    if not validate_device_token(device_token):
+        return 400, json.dumps({'error': 'Invalid value for deviceToken'})
 
     try:
         timestamp_at = convert_timestamp(timestamp) if timestamp else datetime.datetime.now()

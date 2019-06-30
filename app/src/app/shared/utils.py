@@ -43,6 +43,7 @@ def validate_uuid(value):
 
     return True
 
+
 def validate_validation_code(value):
     if len(value) <= 2:
         return False
@@ -51,4 +52,15 @@ def validate_validation_code(value):
     if re.match(value, r'^[0-9a-zA-Z-]{2,7}$'):
         return False
 
+    return True
+
+
+def validate_url(value):
+    if not re.match(r'^(http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,}(:[0-9]{1,5})?(\/.*)?$', value.lower()):
+        return False
+
+    return True
+
+
+def validate_device_token(value):
     return True
