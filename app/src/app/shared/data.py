@@ -3,7 +3,7 @@ import json
 import os
 
 import aiobotocore
-import boto3
+import botocore
 
 from shared.exceptions import InvalidConfigError
 
@@ -27,38 +27,48 @@ async def router(event, context, self_hosted_config, file_type, s3_function, doc
             raise InvalidConfigError
 
 
-async def s3_client(self_hosted_config):
-    session = aiobotocore.get_session(loop=asyncio.get_event_loop())
-    client = session.create_client(
-        's3',
-        region_name='us-west-1',
-        aws_secret_access_key=self_hosted_config.aws_secret_access_key,
-        aws_access_key_id=self_hosted_config.aws_access_key_id,
-        endpoint=self_hosted_config.aws_s3_endpoint
-    )
+async def s3_client(self_hosted_config, asynchronous=False):
+    if asynchronous:
+        session = aiobotocore.get_session(loop=asyncio.get_event_loop())
+        client = session.create_client(
+            's3',
+            region_name='us-west-1',
+            aws_secret_access_key=self_hosted_config.aws_secret_access_key,
+            aws_access_key_id=self_hosted_config.aws_access_key_id,
+            endpoint=self_hosted_config.aws_s3_endpoint
+        )
+    else:
+        session = botocore.session.get_session()
+        client = session.create_client('s3')
+
     return client
 
 
 async def delete_s3(identifier, file_type, self_hosted_config=None, asynchronous=False):
-    # SMELL: don't really know if this works credential wise
-    if not asynchronous:
-        s3 = boto3.resource('s3')
-        versions = s3.Bucket(BUCKETS.get(file_type)).object_versions.filter(
-            Prefix=f'{file_type}/{identifier}'
-        )
-        for version in versions:
-            s3_object = version.get()
-            s3_object.delete()
+    bucket = BUCKETS.get(file_type)
+    key = f'{file_type}/{identifier}'
 
-            # not sure if anything else is needed
-            # #but otherwise you get the version like this
-            # version_id = s3_object.get('VersionId')
+    list_object_versions_data = {
+        'Bucket': bucket,
+        'Prefix': key
+    }
+    if not asynchronous:
+        client = s3_client(self_hosted_config, asynchronous=False)
+        versions = client.list_object_versions(**list_object_versions_data)
     else:
-        client = await s3_client(self_hosted_config)
-        await client.delete_object(
-            Bucket=self_hosted_config.get(file_type).get('s3_bucket'),
-            Key=f'{file_type}/{identifier}'
-        )
+        client = s3_client(self_hosted_config, asynchronous=True)
+        versions = await client.list_object_versions(**list_object_versions_data)
+
+    for object_version in versions.get('Versions'):
+        delete_object_data = {
+            'Bucket': bucket,
+            'Key': key,
+            'VersionId': object_version.get('VersionId'),
+        }
+        if asynchronous:
+            await client.delete_object(**delete_object_data)
+        else:
+            client.delete_object(**delete_object_data)
 
 
 def delete_local(identifier, file_type):
