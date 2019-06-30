@@ -13,14 +13,14 @@ async def handler(event, context):
     except Exception:
         return 400, json.dumps({'error': 'Invalid payload'})
 
-    secret_hash = str(payload.get('secretHash', '')).lower()
+    secret_hash = str(payload.get('secretHash', '')).lower() or str(payload.get('secrethash', '')).lower() or str(payload.get('secret_hash', '')).lower()
     ip = str(payload.get('ip', '')) or None
     issuer = str(payload.get('issuer', '')) or None
     username = str(payload.get('username', '')) or None
-    validation_code = str(payload.get('validationCode', '')) or None
+    validation_code = str(payload.get('validationCode', '')) or str(payload.get('validationcode', '')) or str(payload.get('validation_code', '')) or None
     timestamp = str(payload.get('timestamp', '')) or None
     expire = str(payload.get('expire', '')) or 90
-    webhook_url = str(payload.get('webhookUrl', '')) or None
+    webhook_url = str(payload.get('webhookUrl', '')) or str(payload.get('webhookurl', '')) or str(payload.get('webhook_url', '')) or None
 
     if webhook_url and not re.match(r'^(http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,}(:[0-9]{1,5})?(\/.*)?$', webhook_url.lower()):
         return 400, json.dumps({'error': 'Invalid value for webhookUrl'})

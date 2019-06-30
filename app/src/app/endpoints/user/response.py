@@ -8,12 +8,12 @@ async def handler(event, context):
     except Exception:
         return 400, json.dumps({'error': 'Invalid payload'})
 
-    secret_hash = str(payload.get('secretHash', '')).lower()
+    secret_hash = str(payload.get('secretHash', '')).lower() or str(payload.get('secrethash', '')).lower() or str(payload.get('secret_hash', '')).lower()
     timestamp = str(payload.get('timestamp', '')) or None
-    validation_code = str(payload.get('validationCode', '')) or None
+    validation_code = str(payload.get('validationCode', '')) or str(payload.get('validationcode', '')) or str(payload.get('validation_code', '')) or None
     approve = payload.get('approve')
 
-    if not validate_hash(secrethash):
+    if not validate_hash(secret_hash):
         return 400, json.dumps({'error': 'Invalid value for secretHash'})
 
     try:

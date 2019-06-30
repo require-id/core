@@ -43,6 +43,7 @@ def validate_uuid(value):
 
     return True
 
+
 def validate_validation_code(value):
     if len(value) <= 2:
         return False
