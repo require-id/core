@@ -39,7 +39,7 @@ async def handler(event, context, self_hosted_config=None):
     body = event.get('body')
 
     if method not in ('POST', ):
-        return 405, 'Method Not Allowed'
+        return 405, json.dumps({'message': 'Method Not Allowed'})
 
     json_data = json.loads(body)
     identifier = json_data.get('identifier')

@@ -8,6 +8,6 @@ async def handler(event, context):
     body = event.get('body')
 
     if method not in ('POST', ):
-        return 405, 'Method Not Allowed'
+        return 405, json.dumps({'message': 'Method Not Allowed'})
 
     return 200, f'{method} – app.response: {aws_request_id}'

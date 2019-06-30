@@ -5,7 +5,7 @@ import re
 
 
 async def handler(event, context, self_hosted_config=None):
-    unknown_api_response = 404, json.dumps({'message': 'Missing Authentication Token'})
+    unknown_api_response = 404, json.dumps({'message': 'Invalid API'})
 
     path = event.get('path')
     try:

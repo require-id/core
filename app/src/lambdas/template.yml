@@ -9,49 +9,112 @@ Metadata:
     HomePageUrl: https://require.id/
     SourceCodeUrl: https://github.com/require-id
 Resources:
-  RequireID:
+  RequireIDAPIGatewayExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: apigateway.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: '/'
+      Policies:
+      - PolicyName: execution
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: '*'
+          - Effect: Allow
+            Action:
+            - lambda:InvokeFunction
+            Resource: '*'
+  RequireIDGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: default
+      EndpointConfiguration: EDGE
+      DefinitionBody:
+        openapi: 3.0.0
+        info:
+          version: "0.0.0"
+          title: require.id API
+          description: require.id API
+        x-amazon-apigateway-api-key-source: HEADER
+        securityDefinitions:
+          ApiKeyAuth:
+            type: apiKey
+            name: X-API-Key
+            in: header
+        paths:
+          /:
+            x-amazon-apigateway-any-method:
+              security:
+              - ApiKeyAuth: []
+              x-amazon-apigateway-integration:
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequireIDLambda.Arn}/invocations"
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy
+                credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
+                security:
+                - ApiKeyAuth: []
+          /{proxy+}:
+            x-amazon-apigateway-any-method:
+              security:
+              - ApiKeyAuth: []
+              parameters:
+              - name: proxy
+                in: path
+                required: true
+                type: string
+              x-amazon-apigateway-integration:
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequireIDLambda.Arn}/invocations"
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy
+                credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
+                security:
+                - ApiKeyAuth: []
+  RequireIDApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    DependsOn:
+      - RequireIDUsagePlan
+    Properties:
+      Name: RequireIDApiKey
+      Enabled: "true"
+      StageKeys:
+        - RestApiId: !Ref RequireIDGateway
+          StageName: !Ref RequireIDGateway.Stage
+  RequireIDUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn:
+      - RequireIDGateway
+    Properties:
+      ApiStages:
+      - ApiId: !Ref RequireIDGateway
+        Stage: !Ref RequireIDGateway.Stage
+      UsagePlanName: RequireIDUsagePlan
+  RequireIDUsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties :
+      KeyId: !Ref RequireIDApiKey
+      UsagePlanId: !Ref RequireIDUsagePlan
+      KeyType: API_KEY
+  RequireIDLambda:
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.7
       Handler: index.run
       Events:
-        BackupLoad:
+        HTTP:
           Type: Api
           Properties:
-            Path: /backup/load
-            Method: GET
-        BackupStore:
-          Type: Api
-          Properties:
-            Path: /backup/store
-            Method: POST
-        BackupDelete:
-          Type: Api
-          Properties:
-            Path: /backup/delete
-            Method: POST
-        AppPoll:
-          Type: Api
-          Properties:
-            Path: /app/poll
-            Method: GET
-        AppResponse:
-          Type: Api
-          Properties:
-            Path: /app/response
-            Method: POST
-        PromptNew:
-          Type: Api
-          Properties:
-            Path: /prompt/new
-            Method: POST
-        PromptPoll:
-          Type: Api
-          Properties:
-            Path: /prompt/poll
-            Method: GET
-        PromptAbort:
-          Type: Api
-          Properties:
-            Path: /prompt/abort
-            Method: POST
+            Path: /{proxy+}
+            RestApiId: !Ref RequireIDGateway
+            Method: ANY

@@ -7,6 +7,6 @@ async def handler(event, context):
     method = event.get('httpMethod')
 
     if method not in ('HEAD', 'GET'):
-        return 405, 'Method Not Allowed'
+        return 405, json.dumps({'message': 'Method Not Allowed'})
 
     return 200, f'{method} – prompt.poll: {aws_request_id}'
