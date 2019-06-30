@@ -5,7 +5,7 @@ import os
 import aiobotocore
 import boto3
 
-from shared.exceptions import InvalidConfigError
+from app.shared.exceptions import InvalidConfigError
 
 
 BUCKETS = json.loads(os.environ['BUCKETS'])
