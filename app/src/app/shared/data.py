@@ -40,7 +40,7 @@ def _s3_client(self_hosted_config):
     return client
 
 
-async def delete(identifier, self_hosted_config, file_type):
+async def delete(identifier, file_type, self_hosted_config):
     await router(
         identifier,
         self_hosted_config,
@@ -81,7 +81,7 @@ def _delete_local(identifier, file_type, **kwargs):
         os.remove(previousver_file_path)
 
 
-async def load(identifier, self_hosted_config, file_type):
+async def load(identifier, file_type, self_hosted_config):
     return await router(
         identifier,
         self_hosted_config,
@@ -109,7 +109,7 @@ def _load_local(identifier, file_type, **kwargs):
             return backup_file.read()
 
 
-async def store(identifier, self_hosted_config, file_type, data):
+async def store(identifier, file_type, data, self_hosted_config):
     await router(
         identifier,
         self_hosted_config,
