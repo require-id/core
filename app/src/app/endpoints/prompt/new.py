@@ -34,6 +34,12 @@ async def handler(event, context, self_hosted_config=None):
         return 400, json.dumps({'error': 'Invalid value for timestamp'})
 
     try:
+        if int(expire) < 30 or int(expire) > 300:
+            return 400, json.dumps({'error': 'Invalid value for expire'})
+    except Exception:
+        return 400, json.dumps({'error': 'Invalid value for expire'})
+
+    try:
         expire_at = timestamp_at + datetime.timedelta(seconds=int(expire))
         if not expire_at or expire_at < timestamp_at:
             raise Exception('Expire too early')
@@ -60,6 +66,7 @@ async def handler(event, context, self_hosted_config=None):
         'location': location,
         'timestamp': timestamp_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
         'expireAt': expire_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
+        'respondedAt': None,
         'approveUrl': 'https://api.require.id/poll/response',
         'webhookUrl': webhook_url
     }

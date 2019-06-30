@@ -2,7 +2,7 @@ import asyncio
 import json
 
 from app.shared.data import load, store
-from app.shared.utils import validate_hash
+from app.shared.utils import convert_timestamp, validate_hash
 
 
 async def handler(event, context, self_hosted_config=None):
@@ -13,11 +13,23 @@ async def handler(event, context, self_hosted_config=None):
 
     stored_data = json.loads(await load(secret_hash, 'user', self_hosted_config=self_hosted_config))
     prompt_identifier = stored_data.get('promptIdentifier')
+    state = 'pending' if stored_data.get('state') in ('pending', 'received') else stored_data.get('state')
+    expire_at = convert_timestamp(stored_data.get('expireAt'))
 
-    if stored_data.get('state') not in ('pending', 'received'):
+    if state != 'pending':
         return 404, json.dumps({'error': 'No available prompt'})
 
-    if stored_data.get('state') == 'pending':
+    if stored_data.get('state') in ('pending', 'received') and expire_at < datetime.datetime.now():
+        secret_hash = stored_data.get('secretHash')
+
+        store_data = dict(stored_data)
+        store_data['state'] = 'expired'
+
+        await store(secret_hash, 'user', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
+        await store(prompt_identifier, 'prompt', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
+
+        state = 'expired'
+    elif stored_data.get('state') == 'pending':
         store_data = dict(stored_data)
         store_data['state'] = 'received'
 
@@ -25,7 +37,7 @@ async def handler(event, context, self_hosted_config=None):
         await store(prompt_identifier, 'prompt', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
 
     data = {
-        'state': 'pending' if stored_data.get('state') in ('pending', 'received') else stored_data.get('state'),
+        'state': state,
         'username': stored_data.get('username'),
         'issuer': stored_data.get('issuer'),
         'validationCode': stored_data.get('validationCode'),
