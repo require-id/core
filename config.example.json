@@ -6,6 +6,9 @@
         "aws_secret_access_key": "abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcde"
     },
     "endpoints": {
+        "__COMMENTS__": [
+            "These endpoints are mostly for testing locally. Can be left out in production environments."
+        ],
         "s3": null
     }
 }
