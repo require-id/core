@@ -20,6 +20,9 @@ class LambdaEvent:
         self.method = request.method
         self.path = request.path
         self.headers = request.headers
+        self.query = request.query
+        self.ip = request._cache.get('request_ip')
+        self.host = request.host
 
     def as_dict(self):
         return {
@@ -28,12 +31,21 @@ class LambdaEvent:
             'httpMethod': self.method,
             'headers': dict(self.headers),
             'multiValueHeaders': {k: [v] for k, v in self.headers.items()},
-            'queryStringParameters': None,
-            'multiValueQueryStringParameters': None,
+            'queryStringParameters': {k: v for k, v in self.query.items()} if self.query else None,
+            'multiValueQueryStringParameters': {k: [v] for k, v in self.query.items()}  if self.query else None,
             'pathParameters': None,
             'stageVariables': None,
             'requestContext': {
-
+                'resourcePath': self.path,
+                'httpMethod': self.method,
+                'path': self.path,
+                'protocol': 'HTTP/1.1',
+                'identity': {
+                    'apiKey': self.headers.get('X-API-Key'),
+                    'userAgent': self.headers.get('User-Agent'),
+                    'sourceIp': self.ip
+                },
+                'domainName': self.host
             },
             'body': None,
             'isBase64Encoded': False
@@ -55,6 +67,7 @@ class Service(Base):
         ('api', 'status'): ('GET', True),
         ('app', 'poll'): ('GET', True),
         ('app', 'response'): ('POST', True),
+        ('app', 'subscribe'): ('POST', True),
         ('backup', 'store'): ('POST', True),
         ('backup', 'load'): ('GET', True),
         ('backup', 'delete'): ('DELETE', True),
