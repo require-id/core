@@ -1,28 +1,26 @@
 import asyncio
 import json
 import os
+import shutil
 from typing import Awaitable
 
 import aiobotocore
 import botocore
 
-from app.shared.exceptions import InvalidConfigError
+
+BUCKETS = json.loads(os.getenv('BUCKETS', '{}'))
+DATA_PATH = os.path.join(os.path.abspath(os.sep), 'app', 'data')
 
 
-BUCKETS = json.loads(os.environ['BUCKETS'])
+async def router(identifier, self_hosted_config, file_type, s3_function, docker_volume_function, data=None):
+    '''
+    This function should probably be named soemthing better.
+    '''
 
-
-async def router(event, context, self_hosted_config, file_type, s3_function, docker_volume_function):
-    body = event.get('body')
-
-    json_data = json.loads(body)
-    identifier = json_data.get('identifier')
     if not self_hosted_config or self_hosted_config.storage_method == 's3':
-        return await s3_function(identifier, file_type, self_hosted_config=self_hosted_config)
-    elif self_hosted_config.storage_method == 'docker_volume':
-        return docker_volume_function(identifier, file_type)
+        return await s3_function(identifier, file_type, self_hosted_config=self_hosted_config, data=data)
     else:
-        raise InvalidConfigError
+        return docker_volume_function(identifier, file_type, data=data)
 
 
 def _s3_client(self_hosted_config):
@@ -42,32 +40,37 @@ def _s3_client(self_hosted_config):
     return client
 
 
-async def _delete_s3(identifier, file_type, self_hosted_config=None):
+async def delete(identifier, self_hosted_config, file_type):
+    await router(
+        identifier,
+        self_hosted_config,
+        file_type=file_type,
+        s3_function=_delete_s3,
+        docker_volume_function=_delete_local
+    )
+
+
+async def _delete_s3(identifier, file_type, self_hosted_config, **kwargs):
     bucket = BUCKETS.get(file_type)
     key = f'{file_type}/{identifier}'
 
-    list_object_versions_data = {
-        'Bucket': bucket,
-        'Prefix': key
-    }
     client = _s3_client(self_hosted_config)
-    versions = client.list_object_versions(**list_object_versions_data)
+    versions = client.list_object_versions(Bucket=bucket, Prefix=key)
     if isinstance(versions, Awaitable):
         versions = await versions
 
     for object_version in versions.get('Versions'):
-        delete_object_data = {
-            'Bucket': bucket,
-            'Key': key,
-            'VersionId': object_version.get('VersionId'),
-        }
-        delete_function = client.delete_object(**delete_object_data)
+        delete_function = client.delete_object(
+            Bucket=bucket,
+            Key=key,
+            VersionId=object_version.get('VersionId')
+        )
         if isinstance(delete_function, Awaitable):
             await delete_function
 
 
-def _delete_local(identifier, file_type):
-    file_path = os.path.join(f'/app/{file_type}', identifier)
+def _delete_local(identifier, file_type, **kwargs):
+    file_path = os.path.join(DATA_PATH, file_type, identifier)
     if os.path.isfile(file_path):
         os.remove(file_path)
 
@@ -78,12 +81,60 @@ def _delete_local(identifier, file_type):
         os.remove(previousver_file_path)
 
 
-async def delete(event, context, self_hosted_config, file_type):
-    await router(
-        event,
-        context,
+async def load(identifier, self_hosted_config, file_type):
+    return await router(
+        identifier,
         self_hosted_config,
         file_type=file_type,
-        s3_function=_delete_s3,
-        docker_volume_function=_delete_local
+        s3_function=_load_s3,
+        docker_volume_function=_load_local
     )
+
+
+async def _load_s3(identifier, file_type, self_hosted_config, **kwargs):
+    client = _s3_client(self_hosted_config)
+    object_data = client.get_object(
+        Bucket=BUCKETS.get(file_type),
+        Key=f'{file_type}/{identifier}'
+    )
+    if isinstance(object_data, Awaitable):
+        object_data = await object_data
+    return object_data.get('Body')
+
+
+def _load_local(identifier, file_type, **kwargs):
+    file_path = os.path.join(DATA_PATH, file_type, identifier)
+    if os.path.isfile(file_path):
+        with open(file_path) as backup_file:
+            return backup_file.read()
+
+
+async def store(identifier, self_hosted_config, file_type, data):
+    await router(
+        identifier,
+        self_hosted_config,
+        file_type=file_type,
+        s3_function=_store_s3,
+        docker_volume_function=_store_local,
+        data=data
+    )
+
+
+async def _store_s3(identifier, file_type, self_hosted_config, data, **kwargs):
+    client = _s3_client(self_hosted_config)
+    put_object = client.put_object(
+        Bucket=BUCKETS.get(file_type),
+        Key=f'{file_type}/{identifier}',
+        Body=data
+    )
+    if isinstance(put_object, Awaitable):
+        await put_object
+
+
+def _store_local(identifier, file_type, data, **kwargs):
+    file_path = os.path.join(DATA_PATH, file_type, identifier)
+    if os.path.isfile(file_path):
+        shutil.copyfile(file_path, f'{file_path}.previousver')
+
+    with open(file_path, 'wb') as backup_file:
+        backup_file.write(data)

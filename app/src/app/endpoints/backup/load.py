@@ -1,47 +1,11 @@
 import json
-import os
-
-import boto3
-
-BUCKET = None  # 'require-id-bucket'
-LOCAL_DIRECTORY = '/app/backup'
-
-
-def get_s3_backup(identifier):
-    # SMELL: don't really know if this works credential wise
-    client = boto3.client('s3')
-    return client.get_object(
-        Bucket=BUCKET,
-        Key=f'backup/{identifier}'
-    ).get('Body')
-
-
-def get_local_backup(identifier):
-    backup_file_path = os.path.join(LOCAL_DIRECTORY, identifier)
-    if os.path.isfile(backup_file_path):
-        with open(backup_file_path) as backup_file:
-            return backup_file.read()
+from app.shared import data
 
 
 async def handler(event, context, self_hosted_config=None):
     aws_request_id = context.aws_request_id
-    body = event.get('body')
 
-    json_data = json.loads(body)
-    identifier = json_data.get('identifier')
+    seed_hash = event.get('queryStringParameters', {}).get('seedHash')
+    backup_data = await data.load(seed_hash, self_hosted_config, file_type='backup')
 
-    if not self_hosted_config:
-        backup_data = get_s3_backup(key=identifier)
-    else:
-        if self_hosted_config.backup_storage_method == 'docker_volume':
-            backup_data = get_local_backup(identifier)
-        elif self_hosted_config.backup_storage_method == 's3':
-            # here you should add an async s3 method
-            pass
-        else:
-            return 500, json.dumps({'message': 'Invalid config.'})
-
-    if not backup_data:
-        return 404, json.dumps({'message': 'No backup data found.'})
-
-    return 200, f'backup.load: {aws_request_id}'
+    return 200, json.dumps({'request_id': aws_request_id, 'backup_data': backup_data})

@@ -1,55 +1,16 @@
 import json
-import os
-import shutil
-
-import boto3
-
-from lambdas.exceptions import InvalidConfigError
-
-BUCKET = None  # 'require-id-bucket'
-LOCAL_DIRECTORY = '/app/backup'
-
-
-def s3_backup(identifier, data):
-    # SMELL: don't really know if this works credential wise
-    client = boto3.client('s3')
-    client.put_object(
-        Bucket=BUCKET,
-        Key=f'backup/{identifier}',
-        Body=data
-    )
-
-
-def local_backup(identifier, encrypted_data_bytes):
-    backup_file_path = os.path.join(LOCAL_DIRECTORY, identifier)
-    if os.path.isfile(backup_file_path):
-        shutil.copyfile(backup_file_path, f'{backup_file_path}.lastver')
-
-    with open(backup_file_path, 'wb') as backup_file:
-        backup_file.write(encrypted_data_bytes)
+from app.shared import data
 
 
 async def handler(event, context, self_hosted_config=None):
-    # aws_request_id = context.aws_request_id
-    body = event.get('body')
+    aws_request_id = context.aws_request_id
 
-    json_data = json.loads(body)
-    identifier = json_data.get('identifier')
-    encrypted_data = json_data.get('data')
-    if isinstance(encrypted_data, str):
-        encrypted_data_bytes = encrypted_data.encode('utf-8')
-    try:
-        if not self_hosted_config:
-            s3_backup(key=identifier, data=encrypted_data_bytes)
-        else:
-            if self_hosted_config.backup_storage_method == 'docker_volume':
-                local_backup(identifier, encrypted_data_bytes)
-            elif self_hosted_config.backup_storage_method == 's3':
-                # here you should add an async s3 method
-                pass
-            else:
-                raise InvalidConfigError
-    except Exception as e:
-        return 500, json.dumps({'message': 'Internal Server Error', 'error': f'{e}'})
+    body = json.loads(event.get('body'))
+    seed_hash = body.get('seedHash')
+    backup_data = body.get('data')
+    if isinstance(backup_data, str):
+        backup_data = backup_data.encode('utf-8')
 
-    return 200, json.dumps({'message': 'Data backed up'})
+    await data.store(seed_hash, self_hosted_config, file_type='backup', data=backup_data)
+
+    return 200, f'backup.store: {aws_request_id}'

@@ -73,8 +73,6 @@ EXPOSE 80
 RUN mkdir -p /root/.ssh
 RUN (host=github.com; ssh-keyscan -H $host; for ip in $(dig @1.1.1.1 github.com +short); do ssh-keyscan -H $host,$ip; ssh-keyscan -H $ip; done) 2> /dev/null >> /root/.ssh/known_hosts
 
-RUN mkdir /app/data
-RUN mkdir /app/backup
 
 ENTRYPOINT ["/bin/start-service"]
 
@@ -84,6 +82,7 @@ RUN poetry install --no-dev
 
 ADD app /app
 WORKDIR /app
+RUN mkdir -p /app/data/prompt /app/data/backup
 ENV PYTHONPATH=src
 
 CMD tomodachi run src/service/app.py
