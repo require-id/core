@@ -1,4 +1,3 @@
-import asyncio
 import json
 import os
 
@@ -34,13 +33,13 @@ async def handler(event, context, self_hosted_config=None):
     if not self_hosted_config:
         backup_data = get_s3_backup(key=identifier)
     else:
-        if self_hosted_config.backup_storage_method == 'local':
+        if self_hosted_config.backup_storage_method == 'docker_volume':
             backup_data = get_local_backup(identifier)
         elif self_hosted_config.backup_storage_method == 's3':
             # here you should add an async s3 method
             pass
         else:
-            return 404, json.dumps({'message': 'No backup data found.'})
+            return 500, json.dumps({'message': 'Invalid config.'})
 
     if not backup_data:
         return 404, json.dumps({'message': 'No backup data found.'})

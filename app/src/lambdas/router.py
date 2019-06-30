@@ -3,7 +3,7 @@ import importlib
 import json
 import re
 
-from lambdas.exceptions import InvalidConfigError
+from shared.exceptions import InvalidConfigError
 
 
 async def handler(event, context, self_hosted_config=None):

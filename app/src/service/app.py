@@ -56,6 +56,7 @@ class SelfHostedConfig:
     def __init__(self, config_data):
         self.aws_access_key_id = config_data.get('aws', {}).get('aws_access_key_id')
         self.aws_secret_access_key = config_data.get('aws', {}).get('aws_secret_access_key')
+        self.aws_s3_endpoint = config_data.get('endpoints', {}).get('s3')
 
         self.backup_storage_method = config_data.get('backups', {}).get('storage_method')
         self.backup_s3_bucket = config_data.get('backups', {}).get('s3_bucket')

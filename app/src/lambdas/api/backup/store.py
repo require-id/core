@@ -1,9 +1,10 @@
-import asyncio
 import json
 import os
 import shutil
 
 import boto3
+
+from lambdas.exceptions import InvalidConfigError
 
 BUCKET = None  # 'require-id-bucket'
 LOCAL_DIRECTORY = '/app/backup'
@@ -41,11 +42,13 @@ async def handler(event, context, self_hosted_config=None):
         if not self_hosted_config:
             s3_backup(key=identifier, data=encrypted_data_bytes)
         else:
-            if self_hosted_config.backup_storage_method == 'local':
+            if self_hosted_config.backup_storage_method == 'docker_volume':
                 local_backup(identifier, encrypted_data_bytes)
             elif self_hosted_config.backup_storage_method == 's3':
                 # here you should add an async s3 method
                 pass
+            else:
+                raise InvalidConfigError
     except Exception as e:
         return 500, json.dumps({'message': 'Internal Server Error', 'error': f'{e}'})
 
