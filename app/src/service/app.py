@@ -66,9 +66,9 @@ class Service(Base):
     name = 'require-id'
     routes = {
         ('api', 'status'): ('GET', True),
-        ('app', 'poll'): ('GET', True),
-        ('app', 'response'): ('POST', True),
-        ('app', 'subscribe'): ('POST', True),
+        ('user', 'poll'): ('GET', True),
+        ('user', 'response'): ('POST', True),
+        ('user', 'subscribe'): ('POST', True),
         ('backup', 'store'): ('POST', True),
         ('backup', 'load'): ('GET', True),
         ('backup', 'delete'): ('DELETE', True),
