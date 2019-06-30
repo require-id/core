@@ -54,20 +54,14 @@ Resources:
               in: header
         paths:
           /:
-            x-amazon-apigateway-auth:
-              type: NONE_KEY
             x-amazon-apigateway-any-method:
-              security:
-              - ApiKeyAuth: []
               x-amazon-apigateway-integration:
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequireIDLambda.Arn}/invocations"
                 passthroughBehavior: when_no_match
                 httpMethod: POST
                 type: aws_proxy
                 credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
-                security:
-                - ApiKeyAuth: []
-          /{proxy+}:
+          /app/{proxy+}:
             x-amazon-apigateway-auth:
               type: NONE_KEY
             x-amazon-apigateway-any-method:
@@ -86,6 +80,38 @@ Resources:
                 credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
                 security:
                 - ApiKeyAuth: []
+          /backup/{proxy+}:
+            x-amazon-apigateway-auth:
+              type: NONE_KEY
+            x-amazon-apigateway-any-method:
+              security:
+              - ApiKeyAuth: []
+              parameters:
+              - name: proxy
+                in: path
+                required: true
+                type: string
+              x-amazon-apigateway-integration:
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequireIDLambda.Arn}/invocations"
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy
+                credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
+                security:
+                - ApiKeyAuth: []
+          /prompt/{proxy+}:
+            x-amazon-apigateway-any-method:
+              parameters:
+              - name: proxy
+                in: path
+                required: true
+                type: string
+              x-amazon-apigateway-integration:
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequireIDLambda.Arn}/invocations"
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy
+                credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
   RequireIDApiKey:
     Type: AWS::ApiGateway::ApiKey
     DependsOn:
@@ -117,9 +143,21 @@ Resources:
       Runtime: python3.7
       Handler: index.run
       Events:
-        HTTP:
+        AppApi:
           Type: Api
           Properties:
-            Path: /{proxy+}
+            Path: /app/{proxy+}
+            RestApiId: !Ref RequireIDGateway
+            Method: ANY
+        BackupApi:
+          Type: Api
+          Properties:
+            Path: /backup/{proxy+}
+            RestApiId: !Ref RequireIDGateway
+            Method: ANY
+        PromptApi:
+          Type: Api
+          Properties:
+            Path: /prompt/{proxy+}
             RestApiId: !Ref RequireIDGateway
             Method: ANY

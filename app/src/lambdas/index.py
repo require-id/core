@@ -13,8 +13,8 @@ async def handler(event, context, self_hosted_config=None):
     except Exception:
         return unknown_api_response
 
-    api = re.sub(r'[^a-z0-9_]', '_', api)
-    function_name = re.sub(r'[^a-z0-9_]', '_', function_name)
+    if api != re.sub(r'[^a-z0-9_]', '', api) or function_name != re.sub(r'[^a-z0-9_]', '', function_name):
+        return 404, await self.error(404)
 
     if not api or not function_name:
         return unknown_api_response

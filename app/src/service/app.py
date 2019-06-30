@@ -57,11 +57,11 @@ class Service(Base):
     @tomodachi.http('*', r'/(?P<api>[^/]+?)/(?P<function_name>[^/]+?)/?')
     async def lambda_wrapper(self, request, api, function_name):
         api_key = request.headers.get('API-Key') or request.headers.get('X-API-Key')
-        if api_key != self.config.get('api_key'):
+        if api in ('app', 'backup') and api_key != self.config.get('api_key'):
             return 403, await self.error(403)
 
-        api = re.sub(r'[^a-z0-9_]', '_', api)
-        function_name = re.sub(r'[^a-z0-9_]', '_', function_name)
+        if api != re.sub(r'[^a-z0-9_]', '', api) or function_name != re.sub(r'[^a-z0-9_]', '', function_name):
+            return 404, await self.error(404)
 
         if not api or not function_name:
             return 404, await self.error(404)
