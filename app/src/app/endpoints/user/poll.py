@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import json
 
 from app.shared.data import load, store
@@ -20,15 +21,13 @@ async def handler(event, context, self_hosted_config=None):
         return 404, json.dumps({'error': 'No available prompt'})
 
     if stored_data.get('state') in ('pending', 'received') and expire_at < datetime.datetime.now():
-        secret_hash = stored_data.get('secretHash')
+        state = 'expired'
 
         store_data = dict(stored_data)
         store_data['state'] = 'expired'
 
         await store(secret_hash, 'user', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
         await store(prompt_identifier, 'prompt', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
-
-        state = 'expired'
     elif stored_data.get('state') == 'pending':
         store_data = dict(stored_data)
         store_data['state'] = 'received'
@@ -41,9 +40,11 @@ async def handler(event, context, self_hosted_config=None):
         'username': stored_data.get('username'),
         'issuer': stored_data.get('issuer'),
         'validationCode': stored_data.get('validationCode'),
+        'signKey': stored_data.get('signKey'),
         'ip': stored_data.get('ip'),
         'location': stored_data.get('location'),
-        'approveUrl': stored_data.get('approveUrl')
+        'approveUrl': stored_data.get('approveUrl'),
+        'webhookUrl': stored_data.get('webhookUrl')
     }
 
     return 200, json.dumps(data)

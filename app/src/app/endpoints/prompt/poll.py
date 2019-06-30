@@ -22,15 +22,17 @@ async def handler(event, context, self_hosted_config=None):
         store_data = dict(stored_data)
         store_data['state'] = 'expired'
 
-        await store(secret_hash, 'user', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
         await store(prompt_identifier, 'prompt', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
+        await store(secret_hash, 'user', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
 
         state = 'expired'
 
     data = {
         'state': state,
+        'responseHash': stored_data.get('responseHash'),
         'timestamp': stored_data.get('timestamp'),
         'expireAt': stored_data.get('expireAt'),
+        'respondedAt': stored_data.get('respondedAt')
     }
 
     return 200, json.dumps(data)

@@ -14,11 +14,15 @@ async def handler(event, context, self_hosted_config=None):
 
     secret_hash = str(payload.get('secretHash', '')).lower() or str(payload.get('secrethash', '')).lower() or str(payload.get('secret_hash', '')).lower() or str(payload.get('hash', '')).lower()
     timestamp = str(payload.get('timestamp', '')) or None
-    validation_code = str(payload.get('validationCode', '')) or str(payload.get('validationcode', '')) or str(payload.get('validation_code', '')) or str(payload.get('code', '')) or None
+    validation_code = str(payload.get('validationCode', '')) or str(payload.get('validationcode', '')) or str(payload.get('validation_code', '')) or None
+    response_hash = str(payload.get('responseHash', '')) or str(payload.get('responsehash', '')) or str(payload.get('response_hash', '')) or None
     approve = payload.get('approve')
 
     if not validate_hash(secret_hash):
         return 400, json.dumps({'error': 'Invalid value for secretHash'})
+
+    if response_hash and not validate_hash(response_hash):
+        return 400, json.dumps({'error': 'Invalid value for responseHash'})
 
     try:
         timestamp_at = convert_timestamp(timestamp) if timestamp else datetime.datetime.now()
@@ -50,8 +54,9 @@ async def handler(event, context, self_hosted_config=None):
     store_data = dict(stored_data)
     store_data['state'] = 'approved' if approve else 'denied'
     store_data['respondedAt'] = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+    store_data['responseHash'] = response_hash
 
-    await store(secret_hash, 'user', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
     await store(prompt_identifier, 'prompt', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
+    await store(secret_hash, 'user', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
 
     return 200, json.dumps({'message': 'Prompt responded'})

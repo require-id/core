@@ -18,7 +18,8 @@ async def handler(event, context, self_hosted_config=None):
     ip = str(payload.get('ip', '')) or None
     issuer = str(payload.get('issuer', '')) or None
     username = str(payload.get('username', '')) or None
-    validation_code = str(payload.get('validationCode', '')) or str(payload.get('validationcode', '')) or str(payload.get('validation_code', '')) or str(payload.get('code', '')) or None
+    validation_code = str(payload.get('validationCode', '')) or str(payload.get('validationcode', '')) or str(payload.get('validation_code', '')) or None
+    sign_key = str(payload.get('signKey', '')) or str(payload.get('signkey', '')) or str(payload.get('sign_key', '')) or None
     timestamp = str(payload.get('timestamp', '')) or None
     expire = str(payload.get('expire', '')) or 90
     webhook_url = str(payload.get('webhookUrl', '')) or str(payload.get('webhookurl', '')) or str(payload.get('webhook_url', '')) or None
@@ -54,6 +55,7 @@ async def handler(event, context, self_hosted_config=None):
 
     location = 'Unknown'
     prompt_identifier = str(uuid.uuid4())
+    response_code = str(uuid.uuid4())
 
     store_data = {
         'promptIdentifier': prompt_identifier,
@@ -62,17 +64,19 @@ async def handler(event, context, self_hosted_config=None):
         'issuer': issuer,
         'username': username,
         'validationCode': validation_code,
+        'signKey': sign_key,
         'ip': ip,
         'location': location,
         'timestamp': timestamp_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
         'expireAt': expire_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
         'respondedAt': None,
+        'responseHash': None,
         'approveUrl': 'https://api.require.id/poll/response',
         'webhookUrl': webhook_url
     }
 
-    await store(secret_hash, 'user', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
     await store(prompt_identifier, 'prompt', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
+    await store(secret_hash, 'user', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
 
     data = {
         'promptIdentifier': prompt_identifier

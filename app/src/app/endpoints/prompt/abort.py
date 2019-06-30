@@ -21,7 +21,7 @@ async def handler(event, context, self_hosted_config=None):
     store_data = dict(stored_data)
     stored_data['state'] = 'aborted'
 
-    await store(secret_hash, 'user', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
     await store(prompt_identifier, 'prompt', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
+    await store(secret_hash, 'user', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
 
     return 200, json.dumps({'message': 'Prompt aborted'})
