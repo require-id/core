@@ -21,8 +21,9 @@ class LambdaEvent:
         self.query = request.query
         self.ip = request._cache.get('request_ip')
         self.host = request.host
+        self.read_body = request.read
 
-    def as_dict(self):
+    async def as_dict(self):
         return {
             'resource': self.path,
             'path': self.path,
@@ -45,7 +46,7 @@ class LambdaEvent:
                 },
                 'domainName': self.host
             },
-            'body': None,
+            'body': await self.read_body(),
             'isBase64Encoded': False
         }
 
@@ -97,7 +98,7 @@ class Service(Base):
         context = LambdaContext()
         self_hosted_config = SelfHostedConfig(self.config)
 
-        status_code, body = await router.handler(event.as_dict(), context, self_hosted_config=self_hosted_config)
-        if status_code >= 400:
+        status_code, body = await router.handler(await event.as_dict(), context, self_hosted_config=self_hosted_config)
+        if status_code >= 400 and status_code not in (400, 404):
             return status_code, await self.error(status_code)
         return status_code, body

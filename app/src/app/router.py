@@ -25,7 +25,6 @@ async def handler(event, context, self_hosted_config=None):
     try:
         method_module = importlib.import_module(f'app.endpoints.{api}.{function_name}')
     except ModuleNotFoundError:
-        raise
         return unknown_api_response
 
     func = getattr(method_module, 'handler', None)
