@@ -26,11 +26,7 @@ def get_local_backup(identifier):
 
 async def handler(event, context, self_hosted_config=None):
     aws_request_id = context.aws_request_id
-    method = event.get('httpMethod')
     body = event.get('body')
-
-    if method not in ('HEAD', 'GET'):
-        return 405, json.dumps({'message': 'Method Not Allowed'})
 
     json_data = json.loads(body)
     identifier = json_data.get('identifier')
@@ -49,4 +45,4 @@ async def handler(event, context, self_hosted_config=None):
     if not backup_data:
         return 404, json.dumps({'message': 'No backup data found.'})
 
-    return 200, f'{method} – backup.load: {aws_request_id}'
+    return 200, f'backup.load: {aws_request_id}'

@@ -30,11 +30,7 @@ def local_backup(identifier, encrypted_data_bytes):
 
 async def handler(event, context, self_hosted_config=None):
     # aws_request_id = context.aws_request_id
-    method = event.get('httpMethod')
     body = event.get('body')
-
-    if method not in ('POST', ):
-        return 405, json.dumps({'message': 'Method Not Allowed'})
 
     json_data = json.loads(body)
     identifier = json_data.get('identifier')

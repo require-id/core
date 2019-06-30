@@ -53,18 +53,52 @@ Resources:
               name: x-api-key
               in: header
         paths:
-          /:
-            x-amazon-apigateway-any-method:
+          /app/poll:
+            x-amazon-apigateway-auth:
+              type: NONE_KEY
+            get:
+              security:
+              - ApiKeyAuth: []
               x-amazon-apigateway-integration:
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequireIDLambda.Arn}/invocations"
                 passthroughBehavior: when_no_match
                 httpMethod: POST
                 type: aws_proxy
                 credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
-          /app/{proxy+}:
+                security:
+                - ApiKeyAuth: []
+          /app/response:
             x-amazon-apigateway-auth:
               type: NONE_KEY
-            x-amazon-apigateway-any-method:
+            post:
+              security:
+              - ApiKeyAuth: []
+              x-amazon-apigateway-integration:
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequireIDLambda.Arn}/invocations"
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy
+                credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
+                security:
+                - ApiKeyAuth: []
+          /app/status:
+            x-amazon-apigateway-auth:
+              type: NONE_KEY
+            get:
+              security:
+              - ApiKeyAuth: []
+              x-amazon-apigateway-integration:
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequireIDLambda.Arn}/invocations"
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy
+                credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
+                security:
+                - ApiKeyAuth: []
+          /backup/store:
+            x-amazon-apigateway-auth:
+              type: NONE_KEY
+            post:
               security:
               - ApiKeyAuth: []
               parameters:
@@ -80,10 +114,10 @@ Resources:
                 credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
                 security:
                 - ApiKeyAuth: []
-          /backup/{proxy+}:
+          /backup/load:
             x-amazon-apigateway-auth:
               type: NONE_KEY
-            x-amazon-apigateway-any-method:
+            get:
               security:
               - ApiKeyAuth: []
               parameters:
@@ -99,8 +133,53 @@ Resources:
                 credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
                 security:
                 - ApiKeyAuth: []
-          /prompt/{proxy+}:
-            x-amazon-apigateway-any-method:
+          /backup/delete:
+            x-amazon-apigateway-auth:
+              type: NONE_KEY
+            post:
+              security:
+              - ApiKeyAuth: []
+              parameters:
+              - name: proxy
+                in: path
+                required: true
+                type: string
+              x-amazon-apigateway-integration:
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequireIDLambda.Arn}/invocations"
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy
+                credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
+                security:
+                - ApiKeyAuth: []
+          /prompt/new:
+            post:
+              parameters:
+              - name: proxy
+                in: path
+                required: true
+                type: string
+              x-amazon-apigateway-integration:
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequireIDLambda.Arn}/invocations"
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy
+                credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
+          /prompt/poll:
+            get:
+              parameters:
+              - name: proxy
+                in: path
+                required: true
+                type: string
+              x-amazon-apigateway-integration:
+                uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequireIDLambda.Arn}/invocations"
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                type: aws_proxy
+                credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
+          /prompt/abort:
+            post:
               parameters:
               - name: proxy
                 in: path
@@ -141,23 +220,59 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.7
-      Handler: index.run
+      Handler: router.run
       Events:
-        AppApi:
+        AppPoll:
           Type: Api
           Properties:
-            Path: /app/{proxy+}
+            Path: /app/poll
             RestApiId: !Ref RequireIDGateway
-            Method: ANY
-        BackupApi:
+            Method: GET
+        AppResponse:
           Type: Api
           Properties:
-            Path: /backup/{proxy+}
+            Path: /app/response
             RestApiId: !Ref RequireIDGateway
-            Method: ANY
-        PromptApi:
+            Method: POST
+        AppStatus:
           Type: Api
           Properties:
-            Path: /prompt/{proxy+}
+            Path: /app/status
             RestApiId: !Ref RequireIDGateway
-            Method: ANY
+            Method: GET
+        BackupStore:
+          Type: Api
+          Properties:
+            Path: /backup/store
+            RestApiId: !Ref RequireIDGateway
+            Method: POST
+        BackupLoad:
+          Type: Api
+          Properties:
+            Path: /backup/load
+            RestApiId: !Ref RequireIDGateway
+            Method: GET
+        BackupDelete:
+          Type: Api
+          Properties:
+            Path: /backup/delete
+            RestApiId: !Ref RequireIDGateway
+            Method: POST
+        PromptNew:
+          Type: Api
+          Properties:
+            Path: /prompt/new
+            RestApiId: !Ref RequireIDGateway
+            Method: POST
+        PromptPoll:
+          Type: Api
+          Properties:
+            Path: /prompt/poll
+            RestApiId: !Ref RequireIDGateway
+            Method: GET
+        PromptAbort:
+          Type: Api
+          Properties:
+            Path: /prompt/abort
+            RestApiId: !Ref RequireIDGateway
+            Method: POST

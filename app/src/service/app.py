@@ -7,6 +7,7 @@ import uuid
 import tomodachi
 
 from service.base import Base
+from lambdas.router import handler
 
 
 class LambdaContext:
@@ -50,36 +51,43 @@ class SelfHostedConfig:
 
 class Service(Base):
     name = 'require-id'
+    routes = {
+        ('app', 'poll'): ('GET', True),
+        ('app', 'response'): ('POST', True),
+        ('app', 'status'): ('GET', True),
+        ('backup', 'store'): ('POST', True),
+        ('backup', 'load'): ('GET', True),
+        ('backup', 'delete'): ('POST', True),
+        ('prompt', 'new'): ('POST', False),
+        ('prompt', 'poll'): ('GET', False),
+        ('prompt', 'abort'): ('POST', False)
+    }
 
     def __init__(self):
         self.config = json.loads(os.getenv('CONFIG_DATA') or '{}')
 
     @tomodachi.http('*', r'/(?P<api>[^/]+?)/(?P<function_name>[^/]+?)/?')
     async def lambda_wrapper(self, request, api, function_name):
-        api_key = request.headers.get('API-Key') or request.headers.get('X-API-Key')
-        if api in ('app', 'backup') and api_key != self.config.get('api_key'):
+        route = (api, function_name)
+        if route not in self.routes:
+            return 404, await self.error(404)
+
+        allowed_method, api_key_required = self.routes[route]
+        request_method = request.method
+        if request_method == 'HEAD':
+            request_method = 'GET'
+
+        if api_key_required and request.headers.get('X-API-Key') != self.config.get('api_key'):
             return 403, await self.error(403)
 
-        if api != re.sub(r'[^a-z0-9_]', '', api) or function_name != re.sub(r'[^a-z0-9_]', '', function_name):
-            return 404, await self.error(404)
-
-        if not api or not function_name:
-            return 404, await self.error(404)
-
-        try:
-            method_module = importlib.import_module(f'lambdas.index')
-            func = getattr(method_module, 'handler', None)
-        except ModuleNotFoundError:
-            return 404, await self.error(404)
-
-        if not func:
+        if allowed_method not in ('ANY', '*') and allowed_method != request.method:
             return 404, await self.error(404)
 
         event = LambdaEvent(request)
         context = LambdaContext()
         self_hosted_config = SelfHostedConfig(self.config)
 
-        status_code, body = await func(event.as_dict(), context, self_hosted_config=self_hosted_config)
+        status_code, body = await handler(event.as_dict(), context, self_hosted_config=self_hosted_config)
         if status_code >= 400:
             return status_code, await self.error(status_code)
         return status_code, body
