@@ -135,7 +135,12 @@ async def _store_s3(identifier, file_type, self_hosted_config, data, **kwargs):
 
 
 def _store_local(identifier, file_type, data, **kwargs):
-    file_path = os.path.join(DATA_PATH, file_type, identifier)
+    if not os.path.isdir(DATA_PATH):
+        os.mkdir(DATA_PATH)
+    directory = os.path.join(DATA_PATH, file_type)
+    if not os.path.isdir(directory):
+        os.mkdir(directory)
+    file_path = os.path.join(directory, identifier)
     if os.path.isfile(file_path):
         shutil.copyfile(file_path, f'{file_path}.previousver')
 
