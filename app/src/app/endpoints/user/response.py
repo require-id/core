@@ -3,7 +3,7 @@ import datetime
 import json
 
 from app.shared.data import load, store
-from app.shared.utils import convert_timestamp, validate_hash
+from app.shared.utils import convert_timestamp, get_payload_value, validate_hash
 
 
 async def handler(event, context, self_hosted_config=None):
@@ -23,13 +23,6 @@ async def handler(event, context, self_hosted_config=None):
 
     if response_hash and not validate_hash(response_hash):
         return 400, json.dumps({'error': 'Invalid value for responseHash'})
-
-    try:
-        timestamp_at = convert_timestamp(timestamp) if timestamp else datetime.datetime.now()
-        if not timestamp_at:
-            return 400, json.dumps({'error': 'Invalid value for timestamp'})
-    except Exception:
-        return 400, json.dumps({'error': 'Invalid value for timestamp'})
 
     if approve is not True and approve is not False:
         try:

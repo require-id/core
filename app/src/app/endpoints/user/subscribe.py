@@ -3,7 +3,7 @@ import datetime
 import json
 
 from app.shared.data import store
-from app.shared.utils import convert_timestamp, validate_hash, validate_device_token
+from app.shared.utils import convert_timestamp, get_payload_value, validate_hash, validate_device_token
 
 
 async def handler(event, context, self_hosted_config=None):

@@ -58,7 +58,10 @@ async def handler(event, context, self_hosted_config=None):
     if webhook_url and not validate_url(webhook_url):
         return 400, json.dumps({'error': 'Invalid value for webhookUrl'})
 
-    if encrypted_data and not validate_base64(encrypted_data):
+    try:
+        if encrypted_data and not validate_base64(encrypted_data.encode('utf-8')):
+            return 400, json.dumps({'error': 'encryptedData must be base64 endcoded'})
+    except Exception:
         return 400, json.dumps({'error': 'encryptedData must be base64 endcoded'})
 
     try:

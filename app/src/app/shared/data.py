@@ -31,7 +31,7 @@ def _s3_client(self_hosted_config):
         session = aiobotocore.get_session(loop=asyncio.get_event_loop())
         client = session.create_client(
             's3',
-            region_name='us-west-1',
+            region_name='eu-west-1',
             aws_secret_access_key=self_hosted_config.aws_secret_access_key,
             aws_access_key_id=self_hosted_config.aws_access_key_id,
             endpoint_url=self_hosted_config.aws_s3_endpoint
@@ -58,6 +58,7 @@ async def _delete_s3(identifier, file_type, self_hosted_config, **kwargs):
     key = f'{file_type}/{identifier}'
 
     client = _s3_client(self_hosted_config)
+
     delete_function = client.delete_object(
         Bucket=bucket,
         Key=key
@@ -65,27 +66,25 @@ async def _delete_s3(identifier, file_type, self_hosted_config, **kwargs):
     if isinstance(delete_function, Awaitable):
         await delete_function
 
-    if not file_type == 'backup':
-        return
-
-    delete_function = client.delete_object(
-        Bucket=bucket,
-        Key=f'{key}.previousver'
-    )
-    if isinstance(delete_function, Awaitable):
-        await delete_function
+    if file_type == 'backup':
+        delete_function = client.delete_object(
+            Bucket=bucket,
+            Key=f'{key}.previousver'
+        )
+        if isinstance(delete_function, Awaitable):
+            await delete_function
 
 
 def _delete_local(identifier, file_type, **kwargs):
     file_path = os.path.join(DATA_PATH, file_type, identifier)
+
     if os.path.isfile(file_path):
         os.remove(file_path)
 
-    if not file_type == 'backup':
-        return
-    previousver_file_path = f'{file_path}.previousver'
-    if os.path.isfile(previousver_file_path):
-        os.remove(previousver_file_path)
+    if file_type == 'backup':
+        previousver_file_path = f'{file_path}.previousver'
+        if os.path.isfile(previousver_file_path):
+            os.remove(previousver_file_path)
 
 
 async def load(identifier, file_type, self_hosted_config=None):
@@ -100,20 +99,31 @@ async def load(identifier, file_type, self_hosted_config=None):
 
 async def _load_s3(identifier, file_type, self_hosted_config, **kwargs):
     client = _s3_client(self_hosted_config)
-    object_data = client.get_object(
-        Bucket=BUCKETS.get(file_type),
-        Key=f'{file_type}/{identifier}'
-    )
-    if isinstance(object_data, Awaitable):
-        object_data = await object_data
+
+    try:
+        object_data = client.get_object(
+            Bucket=BUCKETS.get(file_type),
+            Key=f'{file_type}/{identifier}'
+        )
+        if isinstance(object_data, Awaitable):
+            object_data = await object_data
+    except botocore.exceptions.ClientError as e:
+        if e.response['Error']['Code'] == 'NoSuchKey':
+            return b''
+        else:
+            raise e
+
     return object_data.get('Body')
 
 
 def _load_local(identifier, file_type, **kwargs):
     file_path = os.path.join(DATA_PATH, file_type, identifier)
+
     if os.path.isfile(file_path):
-        with open(file_path) as backup_file:
+        with open(file_path, 'rb') as backup_file:
             return backup_file.read()
+
+    return b''
 
 
 async def store(identifier, file_type, data, self_hosted_config=None):
@@ -130,6 +140,7 @@ async def store(identifier, file_type, data, self_hosted_config=None):
 async def _store_s3(identifier, file_type, self_hosted_config, data, **kwargs):
     bucket = BUCKETS.get(file_type)
     key = f'{file_type}/{identifier}'
+
     client = _s3_client(self_hosted_config)
 
     if file_type == 'backup':
@@ -153,15 +164,12 @@ async def _store_s3(identifier, file_type, self_hosted_config, data, **kwargs):
 
 
 def _store_local(identifier, file_type, data, **kwargs):
-    if not os.path.isdir(DATA_PATH):
-        os.mkdir(DATA_PATH)
-
     directory = os.path.join(DATA_PATH, file_type)
     if not os.path.isdir(directory):
-        os.mkdir(directory)
+        os.makedirs(directory)
 
     file_path = os.path.join(directory, identifier)
-    if os.path.isfile(file_path) and file_type == 'backup':
+    if file_type == 'backup' and os.path.isfile(file_path):
         shutil.copyfile(file_path, f'{file_path}.previousver')
 
     with open(file_path, 'wb') as backup_file:
