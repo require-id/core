@@ -31,8 +31,25 @@ async def handler(event, context):
         except Exception:
             return 400, json.dumps({'error': 'Invalid value for approve'})
 
-    expected_validation_code = ''  # debug
+    # Debug data for testing purposes
+    stored_data = {
+        'promptIdentifier': None,
+        'state': 'pending',
+        'issuer': 'The High Table',
+        'username': 'john.wick@thecontentinental.hotel',
+        'validationCode': 'KC3X9',
+        'ip': '1.1.1.1',
+        'location': 'Unknown',
+        'timestamp': '2019-06-30T17:20:00.000000Z',
+        'expireAt': '2019-06-30T17:21:30.000000Z',
+        'approveUrl': 'https://api.require.id/poll/response',
+        'webhookUrl': None
+    }
+
+    expected_validation_code = data.get('validationCode')
     if expected_validation_code and validation_code.upper() != expected_validation_code.upper():
         return 400, json.dumps({'error': 'Invalid value for validationCode'})
+
+    stored_data['state'] = 'approved' if approve else 'denied'
 
     return 200, json.dumps({'message': 'Prompt responded'})

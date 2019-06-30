@@ -27,4 +27,9 @@ async def handler(event, context):
     except Exception:
         return 400, json.dumps({'error': 'Invalid value for timestamp'})
 
+    store_data = {
+        'secretHash': secret_hash,
+        'deviceToken': device_token
+    }
+
     return 400, json.dumps({'error': 'Not implemented'})

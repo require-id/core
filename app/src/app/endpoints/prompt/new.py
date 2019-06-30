@@ -46,4 +46,26 @@ async def handler(event, context):
         return 400, json.dumps({'error': 'Invalid value for validationCode'})
 
     prompt_identifier = str(uuid.uuid4())
-    return 200, json.dumps({'promptIdentifier': prompt_identifier})
+
+    location = 'Unknown'
+
+    store_data = {
+        'promptIdentifier': prompt_identifier,
+        'state': 'pending',
+        'secretHash': secret_hash,
+        'issuer': issuer,
+        'username': username,
+        'validationCode': validation_code,
+        'ip': ip,
+        'location': location,
+        'timestamp': timestamp_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        'expireAt': expire_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        'approveUrl': 'https://api.require.id/poll/response',
+        'webhookUrl': webhook_url
+    }
+
+    data = {
+        'promptIdentifier': prompt_identifier
+    }
+
+    return 200, json.dumps(data)

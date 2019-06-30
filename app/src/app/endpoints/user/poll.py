@@ -11,13 +11,31 @@ async def handler(event, context):
         return 400, json.dumps({'error': 'Invalid value for secretHash'})
 
     # Debug data for testing purposes
-    data = {
+    stored_data = {
+        'promptIdentifier': None,
+        'state': 'pending',
         'issuer': 'The High Table',
         'username': 'john.wick@thecontentinental.hotel',
         'validationCode': 'KC3X9',
         'ip': '1.1.1.1',
         'location': 'Unknown',
-        'approveUrl': 'https://api.require.id/poll/response'
+        'timestamp': '2019-06-30T17:20:00.000000Z',
+        'expireAt': '2019-06-30T17:21:30.000000Z',
+        'approveUrl': 'https://api.require.id/poll/response',
+        'webhookUrl': None
+    }
+
+    if stored_data.get('pending') != 'pending':
+        return 404, json.dumps({'error': 'No available prompt'})
+
+    data = {
+        'state': stored_data.get('state'),
+        'username': stored_data.get('username'),
+        'issuer': stored_data.get('issuer'),
+        'validationCode': stored_data.get('validationCode'),
+        'ip': stored_data.get('ip'),
+        'location': stored_data.get('location'),
+        'approveUrl': stored_data.get('approveUrl')
     }
 
     return 200, json.dumps(data)
