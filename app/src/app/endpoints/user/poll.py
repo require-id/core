@@ -1,12 +1,14 @@
 import asyncio
 import json
 
+from app.shared.utils import validate_hash
+
 
 async def handler(event, context):
-    secret_hash = str(event.get('queryStringParameters', {}).get('secretHash', '')).lower() or str(event.get('queryStringParameters', {}).get('secrethash', '')).lower() or str(event.get('queryStringParameters', {}).get('secret_hash', '')).lower()
+    secret_hash = str(event.get('queryStringParameters', {}).get('secretHash', '')).lower() or str(event.get('queryStringParameters', {}).get('secrethash', '')).lower() or str(event.get('queryStringParameters', {}).get('secret_hash', '')).lower() or str(event.get('queryStringParameters', {}).get('hash', '')).lower()
 
     if not validate_hash(secret_hash):
-        return 400, json.dumps({'error': 'Invalid value for secrethash'})
+        return 400, json.dumps({'error': 'Invalid value for secretHash'})
 
     # Debug data for testing purposes
     data = {

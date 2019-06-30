@@ -53,3 +53,14 @@ def validate_validation_code(value):
         return False
 
     return True
+
+
+def validate_url(value):
+    if not re.match(r'^(http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,}(:[0-9]{1,5})?(\/.*)?$', value.lower()):
+        return False
+
+    return True
+
+
+def validate_device_token(value):
+    return True
