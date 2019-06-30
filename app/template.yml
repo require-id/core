@@ -67,7 +67,7 @@ Resources:
                 credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
                 security:
                 - ApiKeyAuth: []
-          /app/poll:
+          /user/poll:
             x-amazon-apigateway-auth:
               type: NONE_KEY
             get:
@@ -81,7 +81,7 @@ Resources:
                 credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
                 security:
                 - ApiKeyAuth: []
-          /app/response:
+          /user/response:
             x-amazon-apigateway-auth:
               type: NONE_KEY
             post:
@@ -95,7 +95,7 @@ Resources:
                 credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
                 security:
                 - ApiKeyAuth: []
-          /app/subscribe:
+          /user/subscribe:
             x-amazon-apigateway-auth:
               type: NONE_KEY
             post:
@@ -243,22 +243,22 @@ Resources:
             Path: /api/status
             RestApiId: !Ref RequireIDGateway
             Method: GET
-        AppPoll:
+        UserPoll:
           Type: Api
           Properties:
-            Path: /app/poll
+            Path: /user/poll
             RestApiId: !Ref RequireIDGateway
             Method: GET
-        AppResponse:
+        UserResponse:
           Type: Api
           Properties:
-            Path: /app/response
+            Path: /user/response
             RestApiId: !Ref RequireIDGateway
             Method: POST
-        AppSubscribe:
+        UserSubscribe:
           Type: Api
           Properties:
-            Path: /app/subscribe
+            Path: /user/subscribe
             RestApiId: !Ref RequireIDGateway
             Method: POST
         BackupStore:
