@@ -36,19 +36,22 @@ build:
 run:
 	if [ ! ${IMAGE_BUILT} ]; then make build; fi
 	docker rm ${SERVICE_NAME} 2> /dev/null &> /dev/null || true
+	docker network create --driver bridge requireid 2> /dev/null &> /dev/null || true
 	@echo "- Docker: routing HTTP traffic on port ${LOCAL_PORT} -> 80"
-	docker run -ti -p ${LOCAL_PORT}:80 -v ${PWD}/app:/app -e CONFIG_DATA='$(call quotestr,$(CONFIG_DATA))' --name ${SERVICE_NAME} ${IMAGE_NAME}:dev
+	docker run -ti -p ${LOCAL_PORT}:80 -v ${PWD}/app:/app --network=requireid -e CONFIG_DATA='$(call quotestr,$(CONFIG_DATA))' --name ${SERVICE_NAME} ${IMAGE_NAME}:dev
 
 shell:
 	docker exec -ti ${SERVICE_NAME} /bin/bash
 
 cli:
 	if [ ! ${IMAGE_BUILT} ]; then make build; fi
-	docker run -ti -v ${PWD}/app:/app -e CONFIG_DATA='$(call quotestr,$(CONFIG_DATA))' ${IMAGE_NAME}:dev /bin/bash
+	docker network create --driver bridge requireid 2> /dev/null &> /dev/null || true
+	docker run -ti -v ${PWD}/app:/app --network=requireid -e CONFIG_DATA='$(call quotestr,$(CONFIG_DATA))' ${IMAGE_NAME}:dev /bin/bash
 
 project_cli:
 	if [ ! ${IMAGE_BUILT} ]; then make build; fi
-	docker run -ti -v ${PWD}/app:/app -v ${PWD}:/project -w /project -e CONFIG_DATA='$(call quotestr,$(CONFIG_DATA))' ${IMAGE_NAME}:dev /bin/bash
+	docker network create --driver bridge requireid 2> /dev/null &> /dev/null || true
+	docker run -ti -v ${PWD}/app:/app -v ${PWD}:/project -w /project --network=requireid -e CONFIG_DATA='$(call quotestr,$(CONFIG_DATA))' ${IMAGE_NAME}:dev /bin/bash
 
 poetry:
 	if [ ! ${IMAGE_BUILT} ]; then make build; fi
@@ -79,3 +82,11 @@ sam_api:
 deploy:
 	sam package --template-file app/template.yml --profile ${AWS_PROFILE} --s3-bucket ${AWS_LAMBDA_S3} --region ${AWS_REGION} --output-template-file app/packaged.yml
 	sam deploy --profile ${AWS_PROFILE} --region ${AWS_REGION} --template-file app/packaged.yml --stack-name ${AWS_STACK} --capabilities CAPABILITY_IAM
+
+s3up:
+	docker network create --driver bridge requireid 2> /dev/null &> /dev/null || true
+	docker run -ti -d -p 4712:4572 --network=requireid -e MINIO_ACCESS_KEY=AKIAIXXXXXXREQUIREID -e MINIO_SECRET_KEY=abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcde --name require-s3 minio/minio:RELEASE.2019-05-14T23-57-45Z
+
+s3down:
+	docker stop require-s3
+	docker rm require-s3
