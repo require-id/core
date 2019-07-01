@@ -1,8 +1,8 @@
 import datetime
 import json
 
-from app.shared.data import load, store
-from app.shared.utils import convert_timestamp, get_payload_value, validate_hash
+from app.shared.data import delete, load, store
+from app.shared.utils import convert_timestamp, get_payload_value, validate_hash, validate_url
 
 
 async def handler(event, context):
@@ -67,14 +67,13 @@ async def handler(event, context):
         webhook_url = stored_data.get('webhookUrl')
 
     if webhook_url:
-        request_body = {
+        request_body = {  # noqa
             'promptIdentifier': prompt_identifier,
             'respondedAt': responded_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
             'responseHash': response_hash,
             'validationCode': validation_code,
             'state': state
         }
-        # todo
 
     data = {
         'state': state,

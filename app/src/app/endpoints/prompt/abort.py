@@ -1,7 +1,7 @@
 import json
 
 from app.shared.data import load, store
-from app.shared.utils import convert_timestamp, get_query_value, validate_uuid
+from app.shared.utils import get_query_value, validate_uuid
 
 
 async def handler(event, context):

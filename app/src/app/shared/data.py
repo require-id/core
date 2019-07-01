@@ -101,7 +101,7 @@ async def _store_s3(file_type, identifier, data, save_previous=False):
             await async_call(client.copy_object(
                 Bucket=settings.aws_s3_bucket,
                 Key=f'{key}.previousver',
-                CopySource={'Bucket': bucket, 'Key': key}
+                CopySource={'Bucket': settings.aws_s3_bucket, 'Key': key}
             ))
         except botocore.exceptions.ClientError as e:
             if e.response['Error']['Code'] == 'NoSuchKey':

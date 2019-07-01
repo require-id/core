@@ -14,6 +14,7 @@ async def handler(event, context):
     secret_hash = get_payload_value(payload, ('secretHash', 'secrethash', 'secret_hash', 'hash'), '').lower()
     timestamp = get_payload_value(payload, 'timestamp')
     device_token = get_payload_value(payload, ('deviceToken', 'devicetoken', 'device_token', 'token'))
+    platform = get_payload_value(payload, 'platform')
 
     if not validate_hash(secret_hash):
         return 400, json.dumps({'error': 'Invalid value for secretHash'})
@@ -28,9 +29,15 @@ async def handler(event, context):
     except Exception:
         return 400, json.dumps({'error': 'Invalid value for timestamp'})
 
+    if not platform or platform not in ('apns', ):
+        return 400, json.dumps({'error': 'Invalid value for platform'})
+
     store_data = {
         'secretHash': secret_hash,
-        'deviceToken': device_token
+        'deviceToken': device_token,
+        'platform': platform,
+        'state': 'subscribed'
     }
+    await store('subscription', f'{platform}-{secret_hash}', store_data)
 
-    return 400, json.dumps({'error': 'Not implemented'})
+    return 200, json.dumps(store_data)
