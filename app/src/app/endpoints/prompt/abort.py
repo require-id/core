@@ -1,4 +1,3 @@
-import asyncio
 import json
 
 from app.shared.data import load, store

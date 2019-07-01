@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 import json
 
@@ -60,7 +59,7 @@ async def handler(event, context):
     store_data['responseHash'] = response_hash
 
     await store(prompt_identifier, 'prompt', json.dumps(store_data).encode())
-    await store(secret_hash, 'user', json.dumps(store_data).encode())
+    await delete(secret_hash, 'user')
 
     if webhook_url and stored_data.get('webhookUrl') and webhook_url != stored_data.get('webhookUrl'):
         webhook_url = None

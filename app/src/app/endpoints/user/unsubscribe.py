@@ -1,9 +1,7 @@
-import asyncio
-import datetime
 import json
 
 from app.shared.data import load, delete
-from app.shared.utils import convert_timestamp, get_payload_value, validate_hash, validate_device_token
+from app.shared.utils import get_payload_value, validate_hash, validate_device_token
 
 
 async def handler(event, context):

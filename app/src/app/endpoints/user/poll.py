@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 import json
 
@@ -21,7 +20,8 @@ async def handler(event, context):
     state = 'pending' if stored_data.get('state') in ('pending', 'received') else stored_data.get('state')
     expire_at = convert_timestamp(stored_data.get('expireAt'))
 
-    if state not in ('pending', 'expired'):
+    if state not in ('pending', 'expired', 'aborted'):
+        await delete(secret_hash, 'user')
         return 404, json.dumps({'error': 'No available prompt'})
 
     if stored_data.get('state') in ('pending', 'received') and expire_at < datetime.datetime.now():
@@ -39,9 +39,10 @@ async def handler(event, context):
         await store(secret_hash, 'user', json.dumps(store_data).encode())
         await store(prompt_identifier, 'prompt', json.dumps(store_data).encode())
 
-    if state == 'expired' and expire_at + datetime.timedelta(seconds=600) < datetime.datetime.now():
+    if state in ('expired', 'aborted') and expire_at + datetime.timedelta(seconds=600) < datetime.datetime.now():
+        await delete(secret_hash, 'user')
         return 404, json.dumps({'error': 'No available prompt'})
-    elif state == 'expired':
+    elif state in ('expired', 'aborted'):
         await delete(secret_hash, 'user')
 
     data = {
