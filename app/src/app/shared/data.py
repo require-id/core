@@ -32,19 +32,17 @@ def _get_s3_client():
 
 
 async def _delete_s3(identifier, file_type):
-    bucket = settings.aws_s3_bucket
+    client = _get_s3_client()
     key = f'{file_type}/{identifier}'
 
-    client = _get_s3_client()
-
     await async_call(client.delete_object(
-        Bucket=bucket,
+        Bucket=settings.aws_s3_bucket,
         Key=key
     ))
 
     if file_type == 'backup':
         await async_call(client.delete_object(
-            Bucket=bucket,
+            Bucket=settings.aws_s3_bucket,
             Key=f'{key}.previousver'
         ))
 
@@ -62,15 +60,12 @@ async def _delete_local(identifier, file_type):
 
 
 async def _load_s3(identifier, file_type):
-    bucket = settings.aws_s3_bucket
-    key = f'{file_type}/{identifier}'
-
     client = _get_s3_client()
 
     try:
         object_data = await async_call(client.get_object(
-            Bucket=bucket,
-            Key=key
+            Bucket=settings.aws_s3_bucket,
+            Key=f'{file_type}/{identifier}'
         ))
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == 'NoSuchKey':
@@ -92,15 +87,13 @@ async def _load_local(identifier, file_type):
 
 
 async def _store_s3(identifier, file_type, data):
-    bucket = settings.aws_s3_bucket
-    key = f'{file_type}/{identifier}'
-
     client = _get_s3_client()
+    key = f'{file_type}/{identifier}'
 
     if file_type == 'backup':
         try:
             await async_call(client.copy_object(
-                Bucket=bucket,
+                Bucket=settings.aws_s3_bucket,
                 Key=f'{key}.previousver',
                 CopySource={'Bucket': bucket, 'Key': key}
             ))
@@ -111,7 +104,7 @@ async def _store_s3(identifier, file_type, data):
                 raise e
 
     await async_call(client.put_object(
-        Bucket=bucket,
+        Bucket=settings.aws_s3_bucket,
         Key=key,
         Body=data
     ))
