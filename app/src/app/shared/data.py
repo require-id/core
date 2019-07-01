@@ -31,7 +31,7 @@ def _get_s3_client():
     return client
 
 
-async def _delete_s3(identifier, file_type):
+async def _delete_s3(file_type, identifier, delete_previous=False):
     client = _get_s3_client()
     key = f'{file_type}/{identifier}'
 
@@ -40,26 +40,26 @@ async def _delete_s3(identifier, file_type):
         Key=key
     ))
 
-    if file_type == 'backup':
+    if delete_previous:
         await async_call(client.delete_object(
             Bucket=settings.aws_s3_bucket,
             Key=f'{key}.previousver'
         ))
 
 
-async def _delete_local(identifier, file_type):
+async def _delete_local(file_type, identifier, delete_previous=False):
     file_path = os.path.join(DATA_PATH, file_type, identifier)
 
     if os.path.isfile(file_path):
         os.remove(file_path)
 
-    if file_type == 'backup':
+    if delete_previous:
         previousver_file_path = f'{file_path}.previousver'
         if os.path.isfile(previousver_file_path):
             os.remove(previousver_file_path)
 
 
-async def _load_s3(identifier, file_type):
+async def _load_s3(file_type, identifier):
     client = _get_s3_client()
 
     try:
@@ -76,21 +76,21 @@ async def _load_s3(identifier, file_type):
     return await async_call(object_data.get('Body').read())
 
 
-async def _load_local(identifier, file_type):
+async def _load_local(file_type, identifier):
     file_path = os.path.join(DATA_PATH, file_type, identifier)
 
     if os.path.isfile(file_path):
-        with open(file_path, 'rb') as backup_file:
-            return backup_file.read()
+        with open(file_path, 'rb') as file:
+            return file.read()
 
     return b''
 
 
-async def _store_s3(identifier, file_type, data):
+async def _store_s3(file_type, identifier, data, save_previous=False):
     client = _get_s3_client()
     key = f'{file_type}/{identifier}'
 
-    if file_type == 'backup':
+    if save_previous:
         try:
             await async_call(client.copy_object(
                 Bucket=settings.aws_s3_bucket,
@@ -110,17 +110,18 @@ async def _store_s3(identifier, file_type, data):
     ))
 
 
-async def _store_local(identifier, file_type, data):
+async def _store_local(file_type, identifier, data, save_previous=False):
     directory = os.path.join(DATA_PATH, file_type)
+    file_path = os.path.join(directory, identifier)
+
     if not os.path.isdir(directory):
         os.makedirs(directory)
 
-    file_path = os.path.join(directory, identifier)
-    if file_type == 'backup' and os.path.isfile(file_path):
+    if save_previous and os.path.isfile(file_path):
         shutil.copyfile(file_path, f'{file_path}.previousver')
 
-    with open(file_path, 'wb') as backup_file:
-        backup_file.write(data)
+    with open(file_path, 'wb') as file:
+        file.write(data)
 
 
 delete_functions = {

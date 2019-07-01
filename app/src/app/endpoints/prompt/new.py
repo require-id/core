@@ -64,7 +64,7 @@ async def handler(event, context):
         return 400, json.dumps({'error': 'encryptedData must be base64 endcoded'})
 
     try:
-        stored_data = json.loads(await load(secret_hash, 'user'))
+        stored_data = json.loads(await load('user', secret_hash))
         if stored_data:
             stored_expire_at = convert_timestamp(stored_data.get('expireAt'))
             if stored_data.get('state') in ('pending', 'received') and stored_expire_at >= datetime.datetime.now():
@@ -93,8 +93,8 @@ async def handler(event, context):
         'webhookUrl': webhook_url
     }
 
-    await store(prompt_identifier, 'prompt', json.dumps(store_data).encode())
-    await store(secret_hash, 'user', json.dumps(store_data).encode())
+    await store('prompt', prompt_identifier, json.dumps(store_data).encode())
+    await store('user', secret_hash, json.dumps(store_data).encode())
 
     data = {
         'promptIdentifier': prompt_identifier,

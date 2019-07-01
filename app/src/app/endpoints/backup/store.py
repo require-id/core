@@ -22,6 +22,6 @@ async def handler(event, context):
     except Exception:
         return 400, json.dumps({'error': 'backupData must be base64 endcoded'})
 
-    await store(seed_hash, 'backup', backup_data.encode('utf-8'))
+    await store('backup', seed_hash, backup_data.encode('utf-8'), save_previous=True)
 
     return 200, json.dumps({'state': 'saved', 'backupData': backup_data})

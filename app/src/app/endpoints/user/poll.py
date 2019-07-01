@@ -12,7 +12,7 @@ async def handler(event, context):
         return 400, json.dumps({'error': 'Invalid value for secretHash'})
 
     try:
-        stored_data = json.loads(await load(secret_hash, 'user'))
+        stored_data = json.loads(await load('user', secret_hash))
     except Exception:
         return 404, json.dumps({'error': 'No available prompt'})
 
@@ -21,7 +21,7 @@ async def handler(event, context):
     expire_at = convert_timestamp(stored_data.get('expireAt'))
 
     if state not in ('pending', 'expired', 'aborted'):
-        await delete(secret_hash, 'user')
+        await delete('user', secret_hash)
         return 404, json.dumps({'error': 'No available prompt'})
 
     if stored_data.get('state') in ('pending', 'received') and expire_at < datetime.datetime.now():
@@ -30,20 +30,20 @@ async def handler(event, context):
         store_data = dict(stored_data)
         store_data['state'] = state
 
-        await store(secret_hash, 'user', json.dumps(store_data).encode())
-        await store(prompt_identifier, 'prompt', json.dumps(store_data).encode())
+        await store('user', secret_hash, json.dumps(store_data).encode())
+        await store('prompt', prompt_identifier, json.dumps(store_data).encode())
     elif stored_data.get('state') == 'pending':
         store_data = dict(stored_data)
         store_data['state'] = 'received'
 
-        await store(secret_hash, 'user', json.dumps(store_data).encode())
-        await store(prompt_identifier, 'prompt', json.dumps(store_data).encode())
+        await store('user', secret_hash, json.dumps(store_data).encode())
+        await store('prompt', prompt_identifier, json.dumps(store_data).encode())
 
     if state in ('expired', 'aborted') and expire_at + datetime.timedelta(seconds=600) < datetime.datetime.now():
-        await delete(secret_hash, 'user')
+        await delete('user', secret_hash)
         return 404, json.dumps({'error': 'No available prompt'})
     elif state in ('expired', 'aborted'):
-        await delete(secret_hash, 'user')
+        await delete('user', secret_hash)
 
     data = {
         'state': state,

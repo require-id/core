@@ -33,7 +33,7 @@ async def handler(event, context):
         return 400, json.dumps({'error': 'Invalid value for webhookUrl'})
 
     try:
-        stored_data = json.loads(await load(secret_hash, 'user'))
+        stored_data = json.loads(await load('user', secret_hash))
     except Exception:
         return 404, json.dumps({'error': 'No available prompt'})
 
@@ -58,8 +58,8 @@ async def handler(event, context):
     store_data['respondedAt'] = responded_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
     store_data['responseHash'] = response_hash
 
-    await store(prompt_identifier, 'prompt', json.dumps(store_data).encode())
-    await delete(secret_hash, 'user')
+    await store('prompt', prompt_identifier, json.dumps(store_data).encode())
+    await delete('user', secret_hash)
 
     if webhook_url and stored_data.get('webhookUrl') and webhook_url != stored_data.get('webhookUrl'):
         webhook_url = None

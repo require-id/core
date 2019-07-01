@@ -11,7 +11,7 @@ async def handler(event, context):
         return 400, json.dumps({'error': 'Invalid value for promptIdentifier'})
 
     try:
-        stored_data = json.loads(await load(prompt_identifier, 'prompt'))
+        stored_data = json.loads(await load('prompt', prompt_identifier))
 
         if stored_data.get('state') not in ('pending', 'received'):
             return 406, json.dumps({'error': 'Prompt is not in pending state'})
@@ -24,8 +24,8 @@ async def handler(event, context):
     store_data = dict(stored_data)
     store_data['state'] = state
 
-    await store(prompt_identifier, 'prompt', json.dumps(store_data).encode())
-    await store(secret_hash, 'user', json.dumps(store_data).encode())
+    await store('prompt', prompt_identifier, json.dumps(store_data).encode())
+    await store('user', secret_hash, json.dumps(store_data).encode())
 
     data = {
         'promptIdentifier': prompt_identifier,

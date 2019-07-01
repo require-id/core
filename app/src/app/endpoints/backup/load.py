@@ -10,7 +10,7 @@ async def handler(event, context):
     if not validate_hash(seed_hash):
         return 400, json.dumps({'error': 'Invalid value for seedHash'})
 
-    backup_data = await load(seed_hash, 'backup')
+    backup_data = await load('backup', seed_hash)
 
     if backup_data:
         return 200, json.dumps({'state': 'saved', 'backupData': backup_data.decode('utf-8')})
