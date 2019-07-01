@@ -33,7 +33,7 @@ Resources:
           - Effect: Allow
             Action:
             - lambda:InvokeFunction
-            Resource: '*'
+            Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*/*"
   RequireIDGateway:
     Type: AWS::Serverless::Api
     Properties:
@@ -129,11 +129,6 @@ Resources:
             post:
               security:
               - ApiKeyAuth: []
-              parameters:
-              - name: proxy
-                in: path
-                required: true
-                type: string
               x-amazon-apigateway-integration:
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequireIDLambda.Arn}/invocations"
                 passthroughBehavior: when_no_match
@@ -148,11 +143,6 @@ Resources:
             get:
               security:
               - ApiKeyAuth: []
-              parameters:
-              - name: proxy
-                in: path
-                required: true
-                type: string
               x-amazon-apigateway-integration:
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequireIDLambda.Arn}/invocations"
                 passthroughBehavior: when_no_match
@@ -167,11 +157,6 @@ Resources:
             delete:
               security:
               - ApiKeyAuth: []
-              parameters:
-              - name: proxy
-                in: path
-                required: true
-                type: string
               x-amazon-apigateway-integration:
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequireIDLambda.Arn}/invocations"
                 passthroughBehavior: when_no_match
@@ -182,11 +167,6 @@ Resources:
                 - ApiKeyAuth: []
           /prompt/new:
             post:
-              parameters:
-              - name: proxy
-                in: path
-                required: true
-                type: string
               x-amazon-apigateway-integration:
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequireIDLambda.Arn}/invocations"
                 passthroughBehavior: when_no_match
@@ -195,11 +175,6 @@ Resources:
                 credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
           /prompt/poll:
             get:
-              parameters:
-              - name: proxy
-                in: path
-                required: true
-                type: string
               x-amazon-apigateway-integration:
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequireIDLambda.Arn}/invocations"
                 passthroughBehavior: when_no_match
@@ -208,11 +183,6 @@ Resources:
                 credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
           /prompt/abort:
             delete:
-              parameters:
-              - name: proxy
-                in: path
-                required: true
-                type: string
               x-amazon-apigateway-integration:
                 uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequireIDLambda.Arn}/invocations"
                 passthroughBehavior: when_no_match
@@ -244,12 +214,40 @@ Resources:
       KeyId: !Ref RequireIDApiKey
       UsagePlanId: !Ref RequireIDUsagePlan
       KeyType: API_KEY
+  RequireIDLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+      - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      Path: '/'
+      Policies:
+      - PolicyName: S3Policy
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - s3:GetObject
+            - s3:PutObject
+            - s3:DeleteObject
+            Resource: !Sub "arn:aws:s3:::require-id-data/*"
   RequireIDLambda:
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.7
       Handler: app.router.run
       CodeUri: src
+      Role: !GetAtt RequireIDLambdaExecutionRole.Arn
+      Environment:
+        Variables:
+          STORAGE_METHOD: s3
+          AWS_S3_BUCKET: "require-id-data"
       Events:
         ApiStatus:
           Type: Api
