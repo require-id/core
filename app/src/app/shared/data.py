@@ -10,7 +10,7 @@ import botocore
 try:
     import aiobotocore
 except ImportError:
-    pass
+    import botocore.session
 
 DATA_PATH = os.path.join(os.path.abspath(os.sep), 'app', 'data')
 
