@@ -20,10 +20,11 @@ async def handler(event, context):
     if not validate_device_token(device_token):
         return 400, json.dumps({'error': 'Invalid value for deviceToken'})
 
-    if not platform or platform not in ('apns', ):
+    if not platform or platform not in ('apns', 'fcm'):
         return 400, json.dumps({'error': 'Invalid value for platform'})
 
     await delete('subscription', f'{platform}-{secret_hash}')
+
     store_data = {
         'secretHash': secret_hash,
         'deviceToken': device_token,

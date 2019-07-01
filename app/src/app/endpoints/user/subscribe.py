@@ -29,7 +29,7 @@ async def handler(event, context):
     except Exception:
         return 400, json.dumps({'error': 'Invalid value for timestamp'})
 
-    if not platform or platform not in ('apns', ):
+    if not platform or platform not in ('apns', 'fcm'):
         return 400, json.dumps({'error': 'Invalid value for platform'})
 
     store_data = {
@@ -38,6 +38,7 @@ async def handler(event, context):
         'platform': platform,
         'state': 'subscribed'
     }
+
     await store('subscription', f'{platform}-{secret_hash}', store_data)
 
     return 200, json.dumps(store_data)
