@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import shutil
 
@@ -90,6 +91,11 @@ async def _store_s3(file_type, identifier, data, save_previous=False):
     client = _get_s3_client()
     key = f'{file_type}/{identifier}'
 
+    if isinstance(data, str):
+        data = data.encode('utf-8')
+    if not isinstance(data, bytes):
+        data = json.dumps(data).encode()
+
     if save_previous:
         try:
             await async_call(client.copy_object(
@@ -113,6 +119,11 @@ async def _store_s3(file_type, identifier, data, save_previous=False):
 async def _store_local(file_type, identifier, data, save_previous=False):
     directory = os.path.join(DATA_PATH, file_type)
     file_path = os.path.join(directory, identifier)
+
+    if isinstance(data, str):
+        data = data.encode('utf-8')
+    if not isinstance(data, bytes):
+        data = json.dumps(data).encode()
 
     if not os.path.isdir(directory):
         os.makedirs(directory)

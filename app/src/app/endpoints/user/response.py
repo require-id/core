@@ -58,7 +58,7 @@ async def handler(event, context):
     store_data['respondedAt'] = responded_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
     store_data['responseHash'] = response_hash
 
-    await store('prompt', prompt_identifier, json.dumps(store_data).encode())
+    await store('prompt', prompt_identifier, store_data)
     await delete('user', secret_hash)
 
     if webhook_url and stored_data.get('webhookUrl') and webhook_url != stored_data.get('webhookUrl'):

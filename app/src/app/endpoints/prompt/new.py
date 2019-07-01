@@ -93,8 +93,8 @@ async def handler(event, context):
         'webhookUrl': webhook_url
     }
 
-    await store('prompt', prompt_identifier, json.dumps(store_data).encode())
-    await store('user', secret_hash, json.dumps(store_data).encode())
+    await store('prompt', prompt_identifier, store_data)
+    await store('user', secret_hash, store_data)
 
     data = {
         'promptIdentifier': prompt_identifier,

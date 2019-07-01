@@ -30,14 +30,14 @@ async def handler(event, context):
         store_data = dict(stored_data)
         store_data['state'] = state
 
-        await store('user', secret_hash, json.dumps(store_data).encode())
-        await store('prompt', prompt_identifier, json.dumps(store_data).encode())
+        await store('user', secret_hash, store_data)
+        await store('prompt', prompt_identifier, store_data)
     elif stored_data.get('state') == 'pending':
         store_data = dict(stored_data)
         store_data['state'] = 'received'
 
-        await store('user', secret_hash, json.dumps(store_data).encode())
-        await store('prompt', prompt_identifier, json.dumps(store_data).encode())
+        await store('user', secret_hash, store_data)
+        await store('prompt', prompt_identifier, store_data)
 
     if state in ('expired', 'aborted') and expire_at + datetime.timedelta(seconds=600) < datetime.datetime.now():
         await delete('user', secret_hash)

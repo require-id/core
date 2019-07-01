@@ -26,8 +26,8 @@ async def handler(event, context):
         store_data = dict(stored_data)
         store_data['state'] = state
 
-        await store('prompt', prompt_identifier, json.dumps(store_data).encode())
-        await store('user', secret_hash, json.dumps(store_data).encode())
+        await store('prompt', prompt_identifier, store_data)
+        await store('user', secret_hash, store_data)
 
     data = {
         'state': state,
