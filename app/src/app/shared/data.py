@@ -21,15 +21,14 @@ def _get_s3_client():
     except Exception:
         session = botocore.session.get_session()
 
-    client = session.create_client(
-        's3',
-        region_name=settings.region,
-        aws_secret_access_key=settings.aws_secret_access_key,
-        aws_access_key_id=settings.aws_access_key_id,
-        endpoint_url=settings.aws_s3_endpoint
-    )
+    kwargs = {k: v for k, v in {
+        'region_name': settings.aws_region,
+        'aws_access_key_id': settings.aws_access_key_id,
+        'aws_secret_access_key': settings.aws_secret_access_key,
+        'endpoint_url': settings.aws_s3_endpoint
+    }.items() if v is not None}
 
-    return client
+    return session.create_client('s3', **kwargs)
 
 
 async def _delete_s3(file_type, identifier, delete_previous=False):

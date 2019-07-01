@@ -30,18 +30,25 @@ class Settings:
         return self._data.get(key, default)
 
 
+def is_truthy(value):
+    return True if str(value or '').lower() in ('true', '1', 'yes') else False
+
+
 _config_data = json.loads(os.getenv('CONFIG_DATA') or '{}')
+_aws_config_data = _config_data.get('aws', {})
 _storage_method = _config_data.get('storage_method') or os.getenv('STORAGE_METHOD')
 
 if _storage_method not in ('s3', 'docker_volume'):
     _storage_method = None
 
 settings = Settings({
-    'api_key': _config_data.get('api_key'),
-    'aws_access_key_id': _config_data.get('aws', {}).get('aws_access_key_id') or os.getenv('AWS_ACCESS_KEY_ID'),
-    'aws_secret_access_key': _config_data.get('aws', {}).get('aws_secret_access_key') or os.getenv('AWS_SECRET_ACCESS_KEY'),
-    'aws_region': _config_data.get('aws', {}).get('aws_region') or os.getenv('AWS_DEFAULT_REGION') or 'eu-west-1',
-    'aws_s3_bucket':  _config_data.get('aws', {}).get('aws_s3_bucket') or os.getenv('AWS_S3_BUCKET'),
-    'aws_s3_endpoint': _config_data.get('endpoints', {}).get('aws_s3'),
+    'app_api_key': _config_data.get('app_api_key') or None,
+    'prompt_api_key': _config_data.get('prompt_api_key') or None,
+    'aws_access_key_id': None if is_truthy(os.getenv('USE_LAMBDA_ROLE')) else (_aws_config_data.get('aws_access_key_id') or os.getenv('AWS_ACCESS_KEY_ID') or None),
+    'aws_secret_access_key': None if is_truthy(os.getenv('USE_LAMBDA_ROLE')) else (_aws_config_data.get('aws_secret_access_key') or os.getenv('AWS_SECRET_ACCESS_KEY') or None),
+    'aws_region': _aws_config_data.get('region_name') or os.getenv('AWS_DEFAULT_REGION') or 'eu-west-1',
+    'aws_s3_bucket':  _aws_config_data.get('aws_s3_bucket') or os.getenv('AWS_S3_BUCKET'),
+    'aws_s3_endpoint': _aws_config_data.get('aws_s3_endpoint'),
+    'debug': is_truthy(_config_data.get('debug') or os.getenv('DEBUG')),
     'storage_method': _storage_method
 })

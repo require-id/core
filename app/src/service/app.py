@@ -1,25 +1,25 @@
 import tomodachi
 
+from app import router
 from settings import settings
 from service.base import Base
 from service.context import LambdaContext, LambdaEvent
-from app import router
 
 
 class Service(Base):
     name = 'require-id'
     routes = {
-        ('api', 'status'): ('GET', True),
-        ('user', 'poll'): ('GET', True),
-        ('user', 'response'): ('POST', True),
-        ('user', 'subscribe'): ('POST', True),
-        ('user', 'unsubscribe'): ('POST', True),
-        ('backup', 'store'): ('POST', True),
-        ('backup', 'load'): ('GET', True),
-        ('backup', 'delete'): ('DELETE', True),
-        ('prompt', 'new'): ('POST', False),
-        ('prompt', 'poll'): ('GET', False),
-        ('prompt', 'abort'): ('DELETE', False)
+        ('api', 'status'): ('GET', settings.app_api_key),
+        ('user', 'poll'): ('GET', settings.app_api_key),
+        ('user', 'response'): ('POST', settings.app_api_key),
+        ('user', 'subscribe'): ('POST', settings.app_api_key),
+        ('user', 'unsubscribe'): ('POST', settings.app_api_key),
+        ('backup', 'store'): ('POST', settings.app_api_key),
+        ('backup', 'load'): ('GET', settings.app_api_key),
+        ('backup', 'delete'): ('DELETE', settings.app_api_key),
+        ('prompt', 'new'): ('POST', settings.prompt_api_key),
+        ('prompt', 'poll'): ('GET', settings.prompt_api_key),
+        ('prompt', 'abort'): ('DELETE', settings.prompt_api_key)
     }
 
     def __init__(self):
@@ -32,12 +32,12 @@ class Service(Base):
         if route not in self.routes:
             return 404, await self.error(404)
 
-        allowed_method, api_key_required = self.routes[route]
+        allowed_method, expected_api_key = self.routes[route]
         request_method = request.method
         if request_method == 'HEAD':
             request_method = 'GET'
 
-        if api_key_required and request.headers.get('X-API-Key') != settings.api_key:
+        if expected_api_key and request.headers.get('X-API-Key') != settings.expected_api_key:
             return 403, await self.error(403)
 
         if allowed_method not in ('ANY', '*') and allowed_method != request.method:

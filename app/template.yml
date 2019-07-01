@@ -42,9 +42,7 @@ Resources:
       DefinitionBody:
         openapi: 3.0.1
         info:
-          version: "0.0.0"
           title: require.id API
-          description: require.id API
         x-amazon-apigateway-api-key-source: HEADER
         components:
           securitySchemes:
@@ -54,8 +52,6 @@ Resources:
               in: header
         paths:
           /api/status:
-            x-amazon-apigateway-auth:
-              type: NONE_KEY
             get:
               security:
               - ApiKeyAuth: []
@@ -65,11 +61,7 @@ Resources:
                 httpMethod: POST
                 type: aws_proxy
                 credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
-                security:
-                - ApiKeyAuth: []
           /user/poll:
-            x-amazon-apigateway-auth:
-              type: NONE_KEY
             get:
               security:
               - ApiKeyAuth: []
@@ -79,11 +71,7 @@ Resources:
                 httpMethod: POST
                 type: aws_proxy
                 credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
-                security:
-                - ApiKeyAuth: []
           /user/response:
-            x-amazon-apigateway-auth:
-              type: NONE_KEY
             post:
               security:
               - ApiKeyAuth: []
@@ -93,11 +81,7 @@ Resources:
                 httpMethod: POST
                 type: aws_proxy
                 credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
-                security:
-                - ApiKeyAuth: []
           /user/subscribe:
-            x-amazon-apigateway-auth:
-              type: NONE_KEY
             post:
               security:
               - ApiKeyAuth: []
@@ -107,11 +91,7 @@ Resources:
                 httpMethod: POST
                 type: aws_proxy
                 credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
-                security:
-                - ApiKeyAuth: []
           /user/unsubscribe:
-            x-amazon-apigateway-auth:
-              type: NONE_KEY
             post:
               security:
               - ApiKeyAuth: []
@@ -121,11 +101,7 @@ Resources:
                 httpMethod: POST
                 type: aws_proxy
                 credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
-                security:
-                - ApiKeyAuth: []
           /backup/store:
-            x-amazon-apigateway-auth:
-              type: NONE_KEY
             post:
               security:
               - ApiKeyAuth: []
@@ -135,11 +111,7 @@ Resources:
                 httpMethod: POST
                 type: aws_proxy
                 credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
-                security:
-                - ApiKeyAuth: []
           /backup/load:
-            x-amazon-apigateway-auth:
-              type: NONE_KEY
             get:
               security:
               - ApiKeyAuth: []
@@ -149,11 +121,7 @@ Resources:
                 httpMethod: POST
                 type: aws_proxy
                 credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
-                security:
-                - ApiKeyAuth: []
           /backup/delete:
-            x-amazon-apigateway-auth:
-              type: NONE_KEY
             delete:
               security:
               - ApiKeyAuth: []
@@ -163,8 +131,6 @@ Resources:
                 httpMethod: POST
                 type: aws_proxy
                 credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
-                security:
-                - ApiKeyAuth: []
           /prompt/new:
             post:
               x-amazon-apigateway-integration:
@@ -189,30 +155,62 @@ Resources:
                 httpMethod: POST
                 type: aws_proxy
                 credentials: !GetAtt RequireIDAPIGatewayExecutionRole.Arn
-  RequireIDApiKey:
+  RequireIDAppApiKey:
     Type: AWS::ApiGateway::ApiKey
     DependsOn:
-      - RequireIDUsagePlan
+      - RequireIDAppUsagePlan
     Properties:
-      Name: RequireIDApiKey
+      Name: RequireIDAppApiKey
       Enabled: "true"
       StageKeys:
         - RestApiId: !Ref RequireIDGateway
           StageName: !Ref RequireIDGateway.Stage
-  RequireIDUsagePlan:
+  RequireIDPromptApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    DependsOn:
+      - RequireIDPromptUsagePlan
+    Properties:
+      Name: RequireIDPromptApiKey
+      Enabled: "true"
+      Value: hL30bXrRVVJ6kUjQ62lg
+      StageKeys:
+        - RestApiId: !Ref RequireIDGateway
+          StageName: !Ref RequireIDGateway.Stage
+  RequireIDAppUsagePlan:
     Type: AWS::ApiGateway::UsagePlan
     DependsOn:
       - RequireIDGateway
     Properties:
+      Throttle:
+        BurstLimit: 20
+        RateLimit: 5
       ApiStages:
       - ApiId: !Ref RequireIDGateway
         Stage: !Ref RequireIDGateway.Stage
-      UsagePlanName: RequireIDUsagePlan
-  RequireIDUsagePlanKey:
+      UsagePlanName: RequireIDAppUsagePlan
+  RequireIDAppUsagePlanKey:
     Type: AWS::ApiGateway::UsagePlanKey
     Properties :
-      KeyId: !Ref RequireIDApiKey
-      UsagePlanId: !Ref RequireIDUsagePlan
+      KeyId: !Ref RequireIDAppApiKey
+      UsagePlanId: !Ref RequireIDAppUsagePlan
+      KeyType: API_KEY
+  RequireIDPromptUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn:
+      - RequireIDGateway
+    Properties:
+      Throttle:
+        BurstLimit: 20
+        RateLimit: 5
+      ApiStages:
+      - ApiId: !Ref RequireIDGateway
+        Stage: !Ref RequireIDGateway.Stage
+      UsagePlanName: RequireIDPromptUsagePlan
+  RequireIDPromptUsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties :
+      KeyId: !Ref RequireIDPromptApiKey
+      UsagePlanId: !Ref RequireIDPromptUsagePlan
       KeyType: API_KEY
   RequireIDLambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -228,7 +226,7 @@ Resources:
       - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
       Path: '/'
       Policies:
-      - PolicyName: S3Policy
+      - PolicyName: RequireIDS3Policy
         PolicyDocument:
           Statement:
           - Effect: Allow
@@ -244,10 +242,14 @@ Resources:
       Handler: app.router.run
       CodeUri: src
       Role: !GetAtt RequireIDLambdaExecutionRole.Arn
+      Timeout: 15
+      MemorySize: 512
       Environment:
         Variables:
           STORAGE_METHOD: s3
           AWS_S3_BUCKET: "require-id-data"
+          USE_LAMBDA_ROLE: true
+          DEBUG: true
       Events:
         ApiStatus:
           Type: Api
