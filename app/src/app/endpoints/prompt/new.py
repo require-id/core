@@ -3,7 +3,7 @@ import json
 import uuid
 
 from app.shared.data import load, store
-from app.shared.utils import convert_timestamp, get_payload_value, validate_base64, validate_hash, validate_validation_code, validate_url
+from app.shared.utils import convert_timestamp, get_payload_value, validate_base64, validate_hash, validate_url
 
 
 async def handler(event, context):
@@ -15,14 +15,6 @@ async def handler(event, context):
     secret_hash = get_payload_value(payload, ('secretHash', 'secrethash', 'secret_hash', 'hash'), '').lower()
     timestamp = get_payload_value(payload, 'timestamp')
     expire = get_payload_value(payload, 'expire', 90)
-
-    ip = get_payload_value(payload, 'ip')
-    location = get_payload_value(payload, 'location')
-    issuer = get_payload_value(payload, 'issuer')
-    username = get_payload_value(payload, 'username')
-    validation_code = get_payload_value(payload, ('validationCode', 'validationcode', 'validation_code'), '').upper() or None
-    sign_key = get_payload_value(payload, ('signKey', 'signkey', 'sign_key'))
-    webhook_url = get_payload_value(payload, ('webhookUrl', 'webhookurl', 'webhook_url'))
 
     # encryptedData may all contain: ip, location, issuer, username, validationCode, signKey and webhookUrl
     encrypted_data = get_payload_value(payload, ('encryptedData', 'encrypteddata', 'encrypted_data'))
@@ -50,12 +42,6 @@ async def handler(event, context):
     if not validate_hash(secret_hash):
         return 400, json.dumps({'error': 'Invalid value for secretHash'})
 
-    if validation_code and not validate_validation_code(validation_code):
-        return 400, json.dumps({'error': 'Invalid value for validationCode'})
-
-    if webhook_url and not validate_url(webhook_url):
-        return 400, json.dumps({'error': 'Invalid value for webhookUrl'})
-
     try:
         if encrypted_data and not validate_base64(encrypted_data.encode('utf-8')):
             return 400, json.dumps({'error': 'encryptedData must be base64 endcoded'})
@@ -75,21 +61,14 @@ async def handler(event, context):
 
     store_data = {
         'promptIdentifier': prompt_identifier,
+        'uniqueIdentifier': str(uuid.uuid4()),
         'state': 'pending',
         'secretHash': secret_hash,
-        'issuer': issuer,
-        'username': username,
-        'validationCode': validation_code,
-        'signKey': sign_key,
-        'ip': ip,
-        'location': location,
         'encryptedData': encrypted_data,
         'timestamp': timestamp_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
         'expireAt': expire_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
         'respondedAt': None,
-        'responseHash': None,
-        'approveUrl': 'https://api.require.id/poll/response',
-        'webhookUrl': webhook_url
+        'responseHash': None
     }
 
     await store('prompt', prompt_identifier, store_data)

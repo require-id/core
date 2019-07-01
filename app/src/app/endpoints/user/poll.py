@@ -47,15 +47,8 @@ async def handler(event, context):
 
     data = {
         'state': state,
-        'username': stored_data.get('username'),
-        'issuer': stored_data.get('issuer'),
-        'validationCode': stored_data.get('validationCode'),
-        'signKey': stored_data.get('signKey'),
-        'ip': stored_data.get('ip'),
-        'location': stored_data.get('location'),
         'encryptedData': stored_data.get('encryptedData'),
-        'approveUrl': stored_data.get('approveUrl'),
-        'webhookUrl': stored_data.get('webhookUrl'),
+        'uniqueIdentifier': stored_data.get('uniqueIdentifier'),
         'timestamp': stored_data.get('timestamp'),
         'expireAt': stored_data.get('expireAt')
     }

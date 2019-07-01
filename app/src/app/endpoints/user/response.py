@@ -12,7 +12,7 @@ async def handler(event, context):
         return 400, json.dumps({'error': 'Invalid payload'})
 
     secret_hash = get_payload_value(payload, ('secretHash', 'secrethash', 'secret_hash', 'hash'), '').lower()
-    validation_code = get_payload_value(payload, ('validationCode', 'validationcode', 'validation_code'), '').upper() or None
+    unique_identifier = get_payload_value(payload, ('uniqueIdentifier', 'uniqueidentifier', 'unique_identifier', 'identifier'), '').lower()
     response_hash = get_payload_value(payload, ('responseHash', 'responsehash', 'response_hash'), '').lower() or None
     webhook_url = get_payload_value(payload, ('webhookUrl', 'webhookurl', 'webhook_url'))
     approve = payload.get('approve')
@@ -37,19 +37,18 @@ async def handler(event, context):
     except Exception:
         return 404, json.dumps({'error': 'No available prompt'})
 
-    expire_at = convert_timestamp(stored_data.get('expireAt'))
-    expected_validation_code = stored_data.get('validationCode')
-    prompt_identifier = stored_data.get('promptIdentifier')
+    if not unique_identifier or stored_data.get('uniqueIdentifier') != unique_identifier:
+        return 404, json.dumps({'error': 'No available prompt'})
 
     if stored_data.get('state') not in ('pending', 'received'):
         return 404, json.dumps({'error': 'No available prompt'})
 
+    expire_at = convert_timestamp(stored_data.get('expireAt'))
+
     if expire_at < datetime.datetime.now():
         return 404, json.dumps({'error': 'No available prompt'})
 
-    if expected_validation_code and validation_code.upper() != expected_validation_code.upper():
-        return 400, json.dumps({'error': 'Invalid value for validationCode'})
-
+    prompt_identifier = stored_data.get('promptIdentifier')
     state = 'approved' if approve else 'denied'
     responded_at = datetime.datetime.now()
 
@@ -61,22 +60,17 @@ async def handler(event, context):
     await store('prompt', prompt_identifier, store_data)
     await delete('user', secret_hash)
 
-    if webhook_url and stored_data.get('webhookUrl') and webhook_url != stored_data.get('webhookUrl'):
-        webhook_url = None
-    elif not webhook_url and stored_data.get('webhookUrl'):
-        webhook_url = stored_data.get('webhookUrl')
-
     if webhook_url:
         request_body = {  # noqa
             'promptIdentifier': prompt_identifier,
             'respondedAt': responded_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
             'responseHash': response_hash,
-            'validationCode': validation_code,
             'state': state
         }
 
     data = {
         'state': state,
+        'uniqueIdentifier': unique_identifier,
         'respondedAt': responded_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
     }
 
