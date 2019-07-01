@@ -80,6 +80,10 @@ def get_query_value(event, keys, default=None):
         keys = (keys, )
 
     query = event.get('queryStringParameters', {})
+
+    if not query:
+        return default
+
     for key in keys:
         if str(query.get(key, '')):
             return str(query.get(key, ''))
