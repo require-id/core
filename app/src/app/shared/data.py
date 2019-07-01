@@ -2,80 +2,55 @@ import asyncio
 import json
 import os
 import shutil
-from typing import Awaitable
+
+from app.shared.utils import async_call
+from settings import settings
 
 import botocore
-
 try:
     import aiobotocore
 except ImportError:
     pass
 
-BUCKETS = json.loads(os.getenv('BUCKETS', '{"backup":"require-id"}'))
 DATA_PATH = os.path.join(os.path.abspath(os.sep), 'app', 'data')
 
 
-async def router(identifier, file_type, self_hosted_config, s3_function, docker_volume_function, data=None):
-    '''
-    This function should probably be named soemthing better.
-    '''
-
-    if not self_hosted_config or self_hosted_config.storage_method == 's3':
-        return await s3_function(identifier, file_type, self_hosted_config=self_hosted_config, data=data)
-    else:
-        return docker_volume_function(identifier, file_type, data=data)
-
-
-def _s3_client(self_hosted_config):
+def _get_s3_client():
     try:
         session = aiobotocore.get_session(loop=asyncio.get_event_loop())
-        client = session.create_client(
-            's3',
-            region_name='eu-west-1',
-            aws_secret_access_key=self_hosted_config.aws_secret_access_key,
-            aws_access_key_id=self_hosted_config.aws_access_key_id,
-            endpoint_url=self_hosted_config.aws_s3_endpoint
-        )
     except Exception:
         session = botocore.session.get_session()
-        client = session.create_client('s3')
+
+    client = session.create_client(
+        's3',
+        region_name=settings.region,
+        aws_secret_access_key=settings.aws_secret_access_key,
+        aws_access_key_id=settings.aws_access_key_id,
+        endpoint_url=settings.aws_s3_endpoint
+    )
 
     return client
 
 
-async def delete(identifier, file_type, self_hosted_config=None):
-    await router(
-        identifier,
-        file_type=file_type,
-        self_hosted_config=self_hosted_config,
-        s3_function=_delete_s3,
-        docker_volume_function=_delete_local
-    )
-
-
-async def _delete_s3(identifier, file_type, self_hosted_config, **kwargs):
-    bucket = BUCKETS.get(file_type)
+async def _delete_s3(identifier, file_type):
+    bucket = settings.aws_s3_bucket
     key = f'{file_type}/{identifier}'
 
-    client = _s3_client(self_hosted_config)
+    client = _get_s3_client()
 
-    delete_function = client.delete_object(
+    await async_call(client.delete_object(
         Bucket=bucket,
         Key=key
-    )
-    if isinstance(delete_function, Awaitable):
-        await delete_function
+    ))
 
     if file_type == 'backup':
-        delete_function = client.delete_object(
+        await async_call(client.delete_object(
             Bucket=bucket,
             Key=f'{key}.previousver'
-        )
-        if isinstance(delete_function, Awaitable):
-            await delete_function
+        ))
 
 
-def _delete_local(identifier, file_type, **kwargs):
+async def _delete_local(identifier, file_type):
     file_path = os.path.join(DATA_PATH, file_type, identifier)
 
     if os.path.isfile(file_path):
@@ -87,36 +62,27 @@ def _delete_local(identifier, file_type, **kwargs):
             os.remove(previousver_file_path)
 
 
-async def load(identifier, file_type, self_hosted_config=None):
-    return await router(
-        identifier,
-        file_type=file_type,
-        self_hosted_config=self_hosted_config,
-        s3_function=_load_s3,
-        docker_volume_function=_load_local
-    )
+async def _load_s3(identifier, file_type):
+    bucket = settings.aws_s3_bucket
+    key = f'{file_type}/{identifier}'
 
-
-async def _load_s3(identifier, file_type, self_hosted_config, **kwargs):
-    client = _s3_client(self_hosted_config)
+    client = _get_s3_client()
 
     try:
-        object_data = client.get_object(
-            Bucket=BUCKETS.get(file_type),
-            Key=f'{file_type}/{identifier}'
-        )
-        if isinstance(object_data, Awaitable):
-            object_data = await object_data
+        object_data = await async_call(client.get_object(
+            Bucket=bucket,
+            Key=key
+        ))
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == 'NoSuchKey':
             return b''
         else:
             raise e
 
-    return object_data.get('Body')
+    return await async_call(object_data.get('Body').read())
 
 
-def _load_local(identifier, file_type, **kwargs):
+async def _load_local(identifier, file_type):
     file_path = os.path.join(DATA_PATH, file_type, identifier)
 
     if os.path.isfile(file_path):
@@ -126,44 +92,33 @@ def _load_local(identifier, file_type, **kwargs):
     return b''
 
 
-async def store(identifier, file_type, data, self_hosted_config=None):
-    await router(
-        identifier,
-        file_type=file_type,
-        self_hosted_config=self_hosted_config,
-        s3_function=_store_s3,
-        docker_volume_function=_store_local,
-        data=data
-    )
-
-
-async def _store_s3(identifier, file_type, self_hosted_config, data, **kwargs):
-    bucket = BUCKETS.get(file_type)
+async def _store_s3(identifier, file_type, data):
+    bucket = settings.aws_s3_bucket
     key = f'{file_type}/{identifier}'
 
-    client = _s3_client(self_hosted_config)
+    client = _get_s3_client()
 
     if file_type == 'backup':
         try:
-            copy_object = client.copy_object(Bucket=bucket, Key=f'{key}.previousver', CopySource={'Bucket': bucket, 'Key': key})
-            if isinstance(copy_object, Awaitable):
-                await copy_object
+            await async_call(client.copy_object(
+                Bucket=bucket,
+                Key=f'{key}.previousver',
+                CopySource={'Bucket': bucket, 'Key': key}
+            ))
         except botocore.exceptions.ClientError as e:
             if e.response['Error']['Code'] == 'NoSuchKey':
                 pass
             else:
                 raise e
 
-    put_object = client.put_object(
+    await async_call(client.put_object(
         Bucket=bucket,
         Key=key,
         Body=data
-    )
-    if isinstance(put_object, Awaitable):
-        await put_object
+    ))
 
 
-def _store_local(identifier, file_type, data, **kwargs):
+async def _store_local(identifier, file_type, data):
     directory = os.path.join(DATA_PATH, file_type)
     if not os.path.isdir(directory):
         os.makedirs(directory)
@@ -174,3 +129,21 @@ def _store_local(identifier, file_type, data, **kwargs):
 
     with open(file_path, 'wb') as backup_file:
         backup_file.write(data)
+
+
+delete_functions = {
+    's3': _delete_s3,
+    'docker_volume': _delete_local
+}
+load_functions = {
+    's3': _load_s3,
+    'docker_volume': _load_local
+}
+store_functions = {
+    's3': _store_s3,
+    'docker_volume': _store_local
+}
+
+delete = delete_functions.get(settings.storage_method)
+load = load_functions.get(settings.storage_method)
+store = store_functions.get(settings.storage_method)

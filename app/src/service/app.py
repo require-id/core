@@ -4,6 +4,7 @@ import uuid
 
 import tomodachi
 
+from settings import settings
 from service.base import Base
 from app import router
 
@@ -51,14 +52,6 @@ class LambdaEvent:
         }
 
 
-class SelfHostedConfig:
-    def __init__(self, config_data):
-        self.aws_access_key_id = config_data.get('aws', {}).get('aws_access_key_id')
-        self.aws_secret_access_key = config_data.get('aws', {}).get('aws_secret_access_key')
-        self.aws_s3_endpoint = config_data.get('endpoints', {}).get('s3')
-        self.storage_method = config_data.get('storage_method')
-
-
 class Service(Base):
     name = 'require-id'
     routes = {
@@ -76,7 +69,8 @@ class Service(Base):
     }
 
     def __init__(self):
-        self.config = json.loads(os.getenv('CONFIG_DATA') or '{}')
+        if not settings.storage_method:
+            raise Exception('Invalid storage_method')
 
     @tomodachi.http('*', r'/(?P<api>[^/]+?)/(?P<function_name>[^/]+?)/?')
     async def lambda_wrapper(self, request, api, function_name):
@@ -89,7 +83,7 @@ class Service(Base):
         if request_method == 'HEAD':
             request_method = 'GET'
 
-        if api_key_required and request.headers.get('X-API-Key') != self.config.get('api_key'):
+        if api_key_required and request.headers.get('X-API-Key') != settings.api_key:
             return 403, await self.error(403)
 
         if allowed_method not in ('ANY', '*') and allowed_method != request.method:
@@ -97,9 +91,8 @@ class Service(Base):
 
         event = LambdaEvent(request)
         context = LambdaContext()
-        self_hosted_config = SelfHostedConfig(self.config)
 
-        status_code, body = await router.handler(await event.as_dict(), context, self_hosted_config=self_hosted_config)
+        status_code, body = await router.handler(await event.as_dict(), context)
         if status_code >= 400 and status_code not in (400, 404, 406):
             return status_code, await self.error(status_code)
         return status_code, body

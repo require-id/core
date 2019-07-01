@@ -6,14 +6,14 @@ from app.shared.data import delete, load, store
 from app.shared.utils import convert_timestamp, get_query_value, validate_hash
 
 
-async def handler(event, context, self_hosted_config=None):
+async def handler(event, context):
     secret_hash = get_query_value(event, ('secretHash', 'secrethash', 'secret_hash', 'hash'), '').lower()
 
     if not validate_hash(secret_hash):
         return 400, json.dumps({'error': 'Invalid value for secretHash'})
 
     try:
-        stored_data = json.loads(await load(secret_hash, 'user', self_hosted_config=self_hosted_config))
+        stored_data = json.loads(await load(secret_hash, 'user'))
     except Exception:
         return 404, json.dumps({'error': 'No available prompt'})
 
@@ -30,19 +30,19 @@ async def handler(event, context, self_hosted_config=None):
         store_data = dict(stored_data)
         store_data['state'] = state
 
-        await store(secret_hash, 'user', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
-        await store(prompt_identifier, 'prompt', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
+        await store(secret_hash, 'user', json.dumps(store_data).encode())
+        await store(prompt_identifier, 'prompt', json.dumps(store_data).encode())
     elif stored_data.get('state') == 'pending':
         store_data = dict(stored_data)
         store_data['state'] = 'received'
 
-        await store(secret_hash, 'user', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
-        await store(prompt_identifier, 'prompt', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
+        await store(secret_hash, 'user', json.dumps(store_data).encode())
+        await store(prompt_identifier, 'prompt', json.dumps(store_data).encode())
 
     if state == 'expired' and expire_at + datetime.timedelta(seconds=600) < datetime.datetime.now():
         return 404, json.dumps({'error': 'No available prompt'})
     elif state == 'expired':
-        await delete(secret_hash, 'user', self_hosted_config=self_hosted_config)
+        await delete(secret_hash, 'user')
 
     data = {
         'state': state,

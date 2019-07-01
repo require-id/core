@@ -4,7 +4,7 @@ import json
 import re
 
 
-async def handler(event, context, self_hosted_config=None):
+async def handler(event, context):
     unknown_api_response = 404, json.dumps({'message': 'Invalid API'})
 
     path = event.get('path')
@@ -26,7 +26,7 @@ async def handler(event, context, self_hosted_config=None):
         return unknown_api_response
 
     func = getattr(method_module, 'handler', None)
-    return await func(event, context, self_hosted_config)
+    return await func(event, context)
 
 
 def run(event, context):
@@ -34,7 +34,6 @@ def run(event, context):
     try:
         status_code, body = loop.run_until_complete(handler(event, context))
     except Exception:
-        raise
         status_code = 500
         body = json.dumps({'message': 'Internal Server Error'})
 

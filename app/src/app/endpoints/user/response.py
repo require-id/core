@@ -6,7 +6,7 @@ from app.shared.data import load, store
 from app.shared.utils import convert_timestamp, get_payload_value, validate_hash
 
 
-async def handler(event, context, self_hosted_config=None):
+async def handler(event, context):
     try:
         payload = json.loads(event.get('body'))
     except Exception:
@@ -34,7 +34,7 @@ async def handler(event, context, self_hosted_config=None):
         return 400, json.dumps({'error': 'Invalid value for webhookUrl'})
 
     try:
-        stored_data = json.loads(await load(secret_hash, 'user', self_hosted_config=self_hosted_config))
+        stored_data = json.loads(await load(secret_hash, 'user'))
     except Exception:
         return 404, json.dumps({'error': 'No available prompt'})
 
@@ -59,8 +59,8 @@ async def handler(event, context, self_hosted_config=None):
     store_data['respondedAt'] = responded_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
     store_data['responseHash'] = response_hash
 
-    await store(prompt_identifier, 'prompt', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
-    await store(secret_hash, 'user', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
+    await store(prompt_identifier, 'prompt', json.dumps(store_data).encode())
+    await store(secret_hash, 'user', json.dumps(store_data).encode())
 
     if webhook_url and stored_data.get('webhookUrl') and webhook_url != stored_data.get('webhookUrl'):
         webhook_url = None

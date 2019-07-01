@@ -1,6 +1,7 @@
 import base64
 import datetime
 import re
+from typing import Awaitable
 
 
 def convert_timestamp(timestamp):
@@ -95,3 +96,10 @@ def get_payload_value(payload, keys, default=None):
             return str(payload.get(key, ''))
 
     return default
+
+
+async def async_call(func):
+    if isinstance(func, Awaitable):
+        return await func
+
+    return func

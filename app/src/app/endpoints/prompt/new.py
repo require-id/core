@@ -8,7 +8,7 @@ from app.shared.data import load, store
 from app.shared.utils import convert_timestamp, get_payload_value, validate_base64, validate_hash, validate_validation_code, validate_url
 
 
-async def handler(event, context, self_hosted_config=None):
+async def handler(event, context):
     try:
         payload = json.loads(event.get('body'))
     except Exception:
@@ -65,7 +65,7 @@ async def handler(event, context, self_hosted_config=None):
         return 400, json.dumps({'error': 'encryptedData must be base64 endcoded'})
 
     try:
-        stored_data = json.loads(await load(secret_hash, 'user', self_hosted_config=self_hosted_config))
+        stored_data = json.loads(await load(secret_hash, 'user'))
         if stored_data:
             stored_expire_at = convert_timestamp(stored_data.get('expireAt'))
             if stored_data.get('state') in ('pending', 'received') and stored_expire_at >= datetime.datetime.now():
@@ -94,8 +94,8 @@ async def handler(event, context, self_hosted_config=None):
         'webhookUrl': webhook_url
     }
 
-    await store(prompt_identifier, 'prompt', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
-    await store(secret_hash, 'user', json.dumps(store_data).encode(), self_hosted_config=self_hosted_config)
+    await store(prompt_identifier, 'prompt', json.dumps(store_data).encode())
+    await store(secret_hash, 'user', json.dumps(store_data).encode())
 
     data = {
         'promptIdentifier': prompt_identifier,

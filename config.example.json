@@ -1,14 +1,15 @@
 {
     "api_key": "exampleexampleexampleexampleexample00000",
-    "storage_method": "docker_volume || s3",
+    "storage_method": "docker_volume",
     "aws": {
         "aws_access_key_id": "AKIAIXXXXXXREQUIREID",
-        "aws_secret_access_key": "abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcde"
+        "aws_secret_access_key": "abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcde",
+        "aws_s3_bucket": "require-id-example"
     },
     "endpoints": {
         "__COMMENTS__": [
             "These endpoints are mostly for testing locally. Can be left out in production environments."
         ],
-        "s3": null
+        "aws_s3": null
     }
 }
