@@ -1,14 +1,17 @@
+from app.shared import schema
 from app.shared.data import load
-from app.shared.utils import get_query_value, validate_hash
+
+SCHEMA = schema.Schema(
+    seed_hash=schema.HASH | schema.REQUIRED
+)
 
 
 async def handler(event, context):
-    seed_hash = get_query_value(event, ('seedHash', 'hash'), '').lower()
+    values = await SCHEMA.load(event.get('queryStringParameters', {}))
+    if values.error:
+        return 400, {'error': values.error}
 
-    if not validate_hash(seed_hash):
-        return 400, json.dumps({'error': 'Invalid value for seedHash'})
-
-    backup_data = await load('backup', seed_hash, decode=False)
+    backup_data = await load('backup', values.seed_hash, decode=False)
 
     if backup_data:
         return 200, {'state': 'saved', 'backupData': backup_data.decode('utf-8')}

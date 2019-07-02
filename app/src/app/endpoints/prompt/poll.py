@@ -1,32 +1,33 @@
 import datetime
 
+from app.shared import schema
 from app.shared.data import load, store
-from app.shared.utils import convert_timestamp, get_query_value, validate_uuid
+from app.shared.utils import is_expired
+
+SCHEMA = schema.Schema(
+    prompt_identifier=schema.UUID | schema.REQUIRED
+)
 
 
 async def handler(event, context):
-    prompt_identifier = get_query_value(event, ('promptIdentifier', 'identifier'), '').lower()
+    values = await SCHEMA.load(event.get('queryStringParameters', {}))
+    if values.error:
+        return 400, {'error': values.error}
 
-    if not validate_uuid(prompt_identifier):
-        return 400, {'error': 'Invalid value for promptIdentifier'}
-
-    try:
-        stored_data = await load('prompt', prompt_identifier)
-        if not stored_data:
-            return 404, {'error': 'No such promptIdentifier'}
-    except Exception:
+    stored_data = await load('prompt', values.prompt_identifier)
+    if not stored_data:
         return 404, {'error': 'No such promptIdentifier'}
 
     state = stored_data.get('state')
 
-    if stored_data.get('state') in ('pending', 'received') and convert_timestamp(stored_data.get('expireAt')) < datetime.datetime.now():
+    if stored_data.get('state') in ('pending', 'received') and is_expired(stored_data.get('expireAt')):
         prompt_user_hash = stored_data.get('promptUserHash')
         state = 'expired'
 
         store_data = dict(stored_data)
         store_data['state'] = state
 
-        await store('prompt', prompt_identifier, store_data)
+        await store('prompt', values.prompt_identifier, store_data)
         await store('user', prompt_user_hash, store_data)
 
     return 200, {

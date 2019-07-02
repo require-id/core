@@ -67,31 +67,26 @@ def snake_case(key):
     return re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
-def get_param_value(values, keys, default=None):
-    if isinstance(keys, str):
-        keys = (keys, )
-
-    if not values:
-        return default
-
-    for key in keys:
-        for k, value in values.items():
-            if key.lower() == k.lower() or snake_case(key) == k.lower() and str(value):
-                return str(value)
-
-    return default
-
-
-def get_query_value(event, keys, default=None):
-    return get_param_value(event.get('queryStringParameters', {}), keys, default=default)
-
-
-def get_payload_value(payload, keys, default=None):
-    return get_param_value(payload, keys, default=default)
+def camel_case(key):
+    acronyms = ['api']
+    key = key.lower()
+    return ''.join([key.split('_')[0]] + [w.upper() if w in acronyms else w.capitalize() for w in key.split('_')][1:])
 
 
 def sha3(value):
     return hashlib.sha3_256(value).hexdigest()
+
+
+def is_expired(value):
+    if isinstance(value, str):
+        ts = convert_timestamp(value)
+    else:
+        ts = value
+
+    if ts < datetime.datetime.now():
+        return True
+
+    return False
 
 
 async def async_call(func):

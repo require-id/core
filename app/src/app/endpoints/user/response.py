@@ -1,77 +1,59 @@
 import datetime
 import json
 
+from app.shared import schema
 from app.shared.data import delete, load, store
-from app.shared.utils import convert_timestamp, get_payload_value, validate_hash, validate_url
+from app.shared.utils import is_expired
+
+SCHEMA = schema.Schema(
+    prompt_user_hash=schema.HASH | schema.REQUIRED,
+    unique_identifier=schema.UUID | schema.REQUIRED,
+    approve=schema.BOOLEAN | schema.REQUIRED,
+    response_hash=schema.HASH,
+    webhook_url=schema.URL,
+)
 
 
 async def handler(event, context):
-    try:
-        payload = json.loads(event.get('body'))
-    except Exception:
-        return 400, {'error': 'Invalid payload'}
+    values = await SCHEMA.load(event.get('body'))
+    if values.error:
+        return 400, {'error': values.error}
 
-    prompt_user_hash = get_payload_value(payload, ('promptUserHash', 'userHash', 'hash'), '').lower()
-    unique_identifier = get_payload_value(payload, ('uniqueIdentifier', 'identifier'), '').lower()
-    response_hash = get_payload_value(payload, 'responseHash', '').lower() or None
-    webhook_url = get_payload_value(payload, 'webhookUrl')
-    approve = payload.get('approve')
-
-    if not validate_hash(prompt_user_hash):
-        return 400, {'error': 'Invalid value for promptUserHash'}
-
-    if response_hash and not validate_hash(response_hash):
-        return 400, {'error': 'Invalid value for responseHash'}
-
-    if approve is not True and approve is not False:
-        try:
-            approve = bool(int(approve))
-        except Exception:
-            return 400, {'error': 'Invalid value for approve'}
-
-    if webhook_url and not validate_url(webhook_url):
-        return 400, {'error': 'Invalid value for webhookUrl'}
-
-    try:
-        stored_data = await load('user', prompt_user_hash)
-        if not stored_data:
-            return 404, {'error': 'No available prompt'}
-    except Exception:
+    stored_data = await load('user', values.prompt_user_hash)
+    if not stored_data:
         return 404, {'error': 'No available prompt'}
 
-    if not unique_identifier or stored_data.get('uniqueIdentifier') != unique_identifier:
+    if stored_data.get('uniqueIdentifier') != values.unique_identifier:
         return 404, {'error': 'No available prompt'}
 
     if stored_data.get('state') not in ('pending', 'received'):
         return 404, {'error': 'No available prompt'}
 
-    expire_at = convert_timestamp(stored_data.get('expireAt'))
-
-    if expire_at < datetime.datetime.now():
+    if is_expired(stored_data.get('expireAt')):
         return 404, {'error': 'No available prompt'}
 
     prompt_identifier = stored_data.get('promptIdentifier')
-    state = 'approved' if approve else 'denied'
+    state = 'approved' if values.approve else 'denied'
     responded_at = datetime.datetime.now()
 
     store_data = dict(stored_data)
     store_data['state'] = state
     store_data['respondedAt'] = responded_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-    store_data['responseHash'] = response_hash
+    store_data['responseHash'] = values.response_hash
 
     await store('prompt', prompt_identifier, store_data)
-    await delete('user', prompt_user_hash)
+    await delete('user', values.prompt_user_hash)
 
-    if webhook_url:
+    if values.webhook_url:
         request_body = {  # noqa
             'promptIdentifier': prompt_identifier,
             'respondedAt': responded_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
-            'responseHash': response_hash,
+            'responseHash': values.response_hash,
             'state': state
         }
 
     return 200, {
         'state': state,
-        'uniqueIdentifier': unique_identifier,
+        'uniqueIdentifier': values.unique_identifier,
         'respondedAt': responded_at.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
     }

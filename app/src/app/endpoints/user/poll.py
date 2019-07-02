@@ -1,20 +1,21 @@
 import datetime
 
+from app.shared import schema
 from app.shared.data import delete, load, store
-from app.shared.utils import convert_timestamp, get_query_value, validate_hash
+from app.shared.utils import convert_timestamp, is_expired
+
+SCHEMA = schema.Schema(
+    prompt_user_hash=schema.HASH | schema.REQUIRED,
+)
 
 
 async def handler(event, context):
-    prompt_user_hash = get_query_value(event, ('promptUserHash', 'userHash', 'hash'), '').lower()
+    values = await SCHEMA.load(event.get('queryStringParameters', {}))
+    if values.error:
+        return 400, {'error': values.error}
 
-    if not validate_hash(prompt_user_hash):
-        return 400, {'error': 'Invalid value for promptUserHash'}
-
-    try:
-        stored_data = await load('user', prompt_user_hash)
-        if not stored_data:
-            return 404, {'error': 'No available prompt'}
-    except Exception:
+    stored_data = await load('user', values.prompt_user_hash)
+    if not stored_data:
         return 404, {'error': 'No available prompt'}
 
     prompt_identifier = stored_data.get('promptIdentifier')
@@ -22,29 +23,29 @@ async def handler(event, context):
     expire_at = convert_timestamp(stored_data.get('expireAt'))
 
     if state not in ('pending', 'expired', 'aborted'):
-        await delete('user', prompt_user_hash)
+        await delete('user', values.prompt_user_hash)
         return 404, {'error': 'No available prompt'}
 
-    if stored_data.get('state') in ('pending', 'received') and expire_at < datetime.datetime.now():
+    if stored_data.get('state') in ('pending', 'received') and is_expired(expire_at):
         state = 'expired'
 
         store_data = dict(stored_data)
         store_data['state'] = state
 
-        await store('user', prompt_user_hash, store_data)
+        await store('user', values.prompt_user_hash, store_data)
         await store('prompt', prompt_identifier, store_data)
     elif stored_data.get('state') == 'pending':
         store_data = dict(stored_data)
         store_data['state'] = 'received'
 
-        await store('user', prompt_user_hash, store_data)
+        await store('user', values.prompt_user_hash, store_data)
         await store('prompt', prompt_identifier, store_data)
 
-    if state in ('expired', 'aborted') and expire_at + datetime.timedelta(seconds=600) < datetime.datetime.now():
-        await delete('user', prompt_user_hash)
+    if state in ('expired', 'aborted') and is_expired(expire_at + datetime.timedelta(seconds=600)):
+        await delete('user', values.prompt_user_hash)
         return 404, {'error': 'No available prompt'}
     elif state in ('expired', 'aborted'):
-        await delete('user', prompt_user_hash)
+        await delete('user', values.prompt_user_hash)
 
     return 200, {
         'state': state,
