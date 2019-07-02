@@ -3,7 +3,7 @@ from app.shared.utils import get_query_value, validate_uuid
 
 
 async def handler(event, context):
-    prompt_identifier = get_query_value(event, ('promptIdentifier', 'promptidentifier', 'prompt_identifier', 'identifier'), '').lower()
+    prompt_identifier = get_query_value(event, ('promptIdentifier', 'identifier'), '').lower()
 
     if not validate_uuid(prompt_identifier):
         return 400, {'error': 'Invalid value for promptIdentifier'}

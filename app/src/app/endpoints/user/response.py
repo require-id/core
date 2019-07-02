@@ -11,10 +11,10 @@ async def handler(event, context):
     except Exception:
         return 400, {'error': 'Invalid payload'}
 
-    prompt_user_hash = get_payload_value(payload, ('promptUserHash', 'promptuserhash', 'prompt_user_hash', 'userHash', 'userhash', 'user_hash', 'hash'), '').lower()
-    unique_identifier = get_payload_value(payload, ('uniqueIdentifier', 'uniqueidentifier', 'unique_identifier', 'identifier'), '').lower()
-    response_hash = get_payload_value(payload, ('responseHash', 'responsehash', 'response_hash'), '').lower() or None
-    webhook_url = get_payload_value(payload, ('webhookUrl', 'webhookurl', 'webhook_url'))
+    prompt_user_hash = get_payload_value(payload, ('promptUserHash', 'userHash', 'hash'), '').lower()
+    unique_identifier = get_payload_value(payload, ('uniqueIdentifier', 'identifier'), '').lower()
+    response_hash = get_payload_value(payload, 'responseHash', '').lower() or None
+    webhook_url = get_payload_value(payload, 'webhookUrl')
     approve = payload.get('approve')
 
     if not validate_hash(prompt_user_hash):

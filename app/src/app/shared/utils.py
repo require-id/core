@@ -31,34 +31,21 @@ def convert_timestamp(timestamp):
 
 
 def validate_hash(value):
-    if len(value) != 64:
-        return False
-    if re.match(value, r'^[0-9a-f]{64}$'):
+    if not value or not re.match(r'^[0-9a-f]{64}$', str(value)):
         return False
 
     return True
 
 
 def validate_uuid(value):
-    if re.match(value, r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'):
-        return False
-
-    return True
-
-
-def validate_validation_code(value):
-    if len(value) <= 2:
-        return False
-    if len(value) >= 7:
-        return False
-    if re.match(value, r'^[0-9a-zA-Z-]{2,7}$'):
+    if not value or not re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', str(value)):
         return False
 
     return True
 
 
 def validate_url(value):
-    if not re.match(r'^(http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,}(:[0-9]{1,5})?(\/.*)?$', value.lower()):
+    if not re.match(r'^https?:\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,}(:[0-9]{1,5})?(\/.*)?$', value.lower()):
         return False
 
     return True
@@ -75,31 +62,32 @@ def validate_base64(value):
         return False
 
 
-def get_query_value(event, keys, default=None):
+def snake_case(key):
+    s1 = re.sub(r'(.)([A-Z][a-z]+)', r'\1_\2', key)
+    return re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
+
+def get_param_value(values, keys, default=None):
     if isinstance(keys, str):
         keys = (keys, )
 
-    query = event.get('queryStringParameters', {})
-
-    if not query:
+    if not values:
         return default
 
     for key in keys:
-        if str(query.get(key, '')):
-            return str(query.get(key, ''))
+        for k, value in values.items():
+            if key.lower() == k.lower() or snake_case(key) == k.lower() and str(value):
+                return str(value)
 
     return default
+
+
+def get_query_value(event, keys, default=None):
+    return get_param_value(event.get('queryStringParameters', {}), keys, default=default)
 
 
 def get_payload_value(payload, keys, default=None):
-    if isinstance(keys, str):
-        keys = (keys, )
-
-    for key in keys:
-        if str(payload.get(key, '')):
-            return str(payload.get(key, ''))
-
-    return default
+    return get_param_value(payload, keys, default=default)
 
 
 def sha3(value):

@@ -5,7 +5,7 @@ from app.shared.utils import convert_timestamp, get_query_value, validate_hash
 
 
 async def handler(event, context):
-    prompt_user_hash = get_query_value(event, ('promptUserHash', 'promptuserhash', 'prompt_user_hash', 'UserHash', 'userHash', 'userhash', 'user_hash', 'hash'), '').lower()
+    prompt_user_hash = get_query_value(event, ('promptUserHash', 'userHash', 'hash'), '').lower()
 
     if not validate_hash(prompt_user_hash):
         return 400, {'error': 'Invalid value for promptUserHash'}

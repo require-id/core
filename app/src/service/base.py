@@ -1,5 +1,6 @@
 import json
 
+from settings import settings
 import tomodachi
 
 

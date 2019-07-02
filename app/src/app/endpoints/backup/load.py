@@ -3,7 +3,7 @@ from app.shared.utils import get_query_value, validate_hash
 
 
 async def handler(event, context):
-    seed_hash = get_query_value(event, ('seedHash', 'seedhash', 'seed_hash', 'hash'), '').lower()
+    seed_hash = get_query_value(event, ('seedHash', 'hash'), '').lower()
 
     if not validate_hash(seed_hash):
         return 400, json.dumps({'error': 'Invalid value for seedHash'})

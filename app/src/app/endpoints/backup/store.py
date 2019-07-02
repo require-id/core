@@ -10,8 +10,8 @@ async def handler(event, context):
     except Exception:
         return 400, {'error': 'Invalid payload'}
 
-    seed_hash = get_payload_value(payload, ('seedHash', 'seedhash', 'seed_hash', 'hash'), '').lower()
-    backup_data = get_payload_value(payload, ('backupData', 'backupdata', 'backup_data', 'data'), '')
+    seed_hash = get_payload_value(payload, ('seedHash', 'hash'), '').lower()
+    backup_data = get_payload_value(payload, ('backupData', 'data'), '')
 
     if not validate_hash(seed_hash):
         return 400, {'error': 'Invalid value for seedHash'}

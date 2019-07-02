@@ -12,13 +12,13 @@ async def handler(event, context):
     except Exception:
         return 400, {'error': 'Invalid payload'}
 
-    prompt_user_hash = get_payload_value(payload, ('promptUserHash', 'promptuserhash', 'prompt_user_hash', 'UserHash', 'userHash', 'userhash', 'user_hash', 'hash'), '').lower()
+    prompt_user_hash = get_payload_value(payload, ('promptUserHash', 'userHash', 'hash'), '').lower()
     timestamp = get_payload_value(payload, 'timestamp')
     expire = get_payload_value(payload, 'expire', 90)
 
     # encryptedData contains: ip, location, issuer, username, validationCode, signKey, timestamp, expire and webhookUrl
     # Device should verify that timestamp and expire match values in poll to prevent replay attacks with other values
-    encrypted_data = get_payload_value(payload, ('encryptedData', 'encrypteddata', 'encrypted_data'))
+    encrypted_data = get_payload_value(payload, ('encryptedData', 'data'))
 
     try:
         timestamp_at = convert_timestamp(timestamp) if timestamp else datetime.datetime.now()

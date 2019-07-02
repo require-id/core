@@ -11,9 +11,8 @@ async def handler(event, context):
     except Exception:
         return 400, {'error': 'Invalid payload'}
 
-    prompt_user_hash = get_payload_value(payload, ('promptUserHash', 'promptuserhash', 'prompt_user_hash', 'UserHash', 'userHash', 'userhash', 'user_hash', 'hash'), '').lower()
-    timestamp = get_payload_value(payload, 'timestamp')
-    device_token = get_payload_value(payload, ('deviceToken', 'devicetoken', 'device_token', 'token'))
+    prompt_user_hash = get_payload_value(payload, ('promptUserHash', 'userHash', 'hash'), '').lower()
+    device_token = get_payload_value(payload, ('deviceToken', 'token'))
     platform = get_payload_value(payload, 'platform')
 
     if not validate_hash(prompt_user_hash):
@@ -21,13 +20,6 @@ async def handler(event, context):
 
     if not validate_device_token(device_token):
         return 400, {'error': 'Invalid value for deviceToken'}
-
-    try:
-        timestamp_at = convert_timestamp(timestamp) if timestamp else datetime.datetime.now()
-        if not timestamp_at:
-            return 400, {'error': 'Invalid value for timestamp'}
-    except Exception:
-        return 400, {'error': 'Invalid value for timestamp'}
 
     if not platform or platform not in ('apns', 'fcm'):
         return 400, {'error': 'Invalid value for platform'}
