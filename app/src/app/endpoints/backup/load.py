@@ -1,5 +1,3 @@
-import json
-
 from app.shared.data import load
 from app.shared.utils import get_query_value, validate_hash
 
@@ -10,9 +8,9 @@ async def handler(event, context):
     if not validate_hash(seed_hash):
         return 400, json.dumps({'error': 'Invalid value for seedHash'})
 
-    backup_data = await load('backup', seed_hash)
+    backup_data = await load('backup', seed_hash, decode=False)
 
     if backup_data:
-        return 200, json.dumps({'state': 'saved', 'backupData': backup_data.decode('utf-8')})
+        return 200, {'state': 'saved', 'backupData': backup_data.decode('utf-8')}
 
-    return 404, json.dumps({'error': 'No such seedHash'})
+    return 404, {'error': 'No such seedHash'}

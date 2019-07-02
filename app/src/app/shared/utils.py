@@ -102,6 +102,10 @@ def get_payload_value(payload, keys, default=None):
     return default
 
 
+def sha3(value):
+    return hashlib.sha3_256(value).hexdigest()
+
+
 async def async_call(func):
     if isinstance(func, Awaitable):
         return await func

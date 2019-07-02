@@ -59,7 +59,7 @@ async def _delete_local(file_type, identifier, delete_previous=False):
             os.remove(previousver_file_path)
 
 
-async def _load_s3(file_type, identifier):
+async def _load_s3(file_type, identifier, decode=True):
     client = _get_s3_client()
 
     try:
@@ -69,21 +69,37 @@ async def _load_s3(file_type, identifier):
         ))
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == 'NoSuchKey':
-            return b''
+            return None
         else:
             raise e
 
-    return await async_call(object_data.get('Body').read())
+    data = await async_call(object_data.get('Body').read())
+
+    try:
+        if data and decode:
+            return json.loads(data)
+    except Exception:
+        pass
+
+    return data
 
 
-async def _load_local(file_type, identifier):
+async def _load_local(file_type, identifier, decode=True):
     file_path = os.path.join(DATA_PATH, file_type, identifier)
 
     if os.path.isfile(file_path):
         with open(file_path, 'rb') as file:
-            return file.read()
+            data = file.read()
 
-    return b''
+            try:
+                if data and decode:
+                    return json.loads(data)
+            except Exception:
+                pass
+
+            return data
+
+    return None
 
 
 async def _store_s3(file_type, identifier, data, save_previous=False):

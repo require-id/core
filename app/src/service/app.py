@@ -37,7 +37,7 @@ class Service(Base):
         if request_method == 'HEAD':
             request_method = 'GET'
 
-        if expected_api_key and request.headers.get('X-API-Key') != settings.expected_api_key:
+        if expected_api_key and request.headers.get('X-API-Key') != expected_api_key:
             return 403, await self.error(403)
 
         if allowed_method not in ('ANY', '*') and allowed_method != request.method:

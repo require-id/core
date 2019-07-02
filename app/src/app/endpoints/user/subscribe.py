@@ -9,36 +9,49 @@ async def handler(event, context):
     try:
         payload = json.loads(event.get('body'))
     except Exception:
-        return 400, json.dumps({'error': 'Invalid payload'})
+        return 400, {'error': 'Invalid payload'}
 
-    secret_hash = get_payload_value(payload, ('secretHash', 'secrethash', 'secret_hash', 'hash'), '').lower()
+    prompt_user_hash = get_payload_value(payload, ('promptUserHash', 'promptuserhash', 'prompt_user_hash', 'UserHash', 'userHash', 'userhash', 'user_hash', 'hash'), '').lower()
     timestamp = get_payload_value(payload, 'timestamp')
     device_token = get_payload_value(payload, ('deviceToken', 'devicetoken', 'device_token', 'token'))
     platform = get_payload_value(payload, 'platform')
 
-    if not validate_hash(secret_hash):
-        return 400, json.dumps({'error': 'Invalid value for secretHash'})
+    if not validate_hash(prompt_user_hash):
+        return 400, {'error': 'Invalid value for promptUserHash'}
 
     if not validate_device_token(device_token):
-        return 400, json.dumps({'error': 'Invalid value for deviceToken'})
+        return 400, {'error': 'Invalid value for deviceToken'}
 
     try:
         timestamp_at = convert_timestamp(timestamp) if timestamp else datetime.datetime.now()
         if not timestamp_at:
-            return 400, json.dumps({'error': 'Invalid value for timestamp'})
+            return 400, {'error': 'Invalid value for timestamp'}
     except Exception:
-        return 400, json.dumps({'error': 'Invalid value for timestamp'})
+        return 400, {'error': 'Invalid value for timestamp'}
 
     if not platform or platform not in ('apns', 'fcm'):
-        return 400, json.dumps({'error': 'Invalid value for platform'})
+        return 400, {'error': 'Invalid value for platform'}
 
-    store_data = {
-        'secretHash': secret_hash,
+    data = {
+        'promptUserHash': prompt_user_hash,
         'deviceToken': device_token,
         'platform': platform,
         'state': 'subscribed'
     }
 
-    await store('subscription', f'{platform}-{secret_hash}', store_data)
+    subscription_data = await load('subscription', prompt_user_hash)
+    add_store_data = True
+    if not subscription_data or not isinstance(subscription_data, list):
+        store_data = []
+    else:
+        store_data = list(subscription_data)
+        for subscription in subscription_data:
+            if subscription.get('deviceToken') == device_token:
+                add_store_data = False
 
-    return 200, json.dumps(store_data)
+    if add_store_data:
+        store_data.append(data)
+
+    await store('subscription', prompt_user_hash, store_data)
+
+    return 200, data

@@ -27,7 +27,12 @@ async def handler(event, context):
         return unknown_api_response
 
     func = getattr(method_module, 'handler', None)
-    return await func(event, context)
+    status_code, return_value = await func(event, context)
+
+    if isinstance(return_value, dict) or isinstance(return_value, list):
+        return_value = json.dumps(return_value)
+
+    return status_code, return_value
 
 
 def run(event, context):
