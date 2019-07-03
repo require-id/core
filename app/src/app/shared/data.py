@@ -3,14 +3,15 @@ import json
 import os
 import shutil
 
-from app.shared.utils import async_call
-from settings import settings
-
 import botocore
 try:
     import aiobotocore
 except ImportError:
     import botocore.session
+
+from app.shared.encryption import encrypt, decrypt
+from app.shared.utils import async_call, sha3
+from settings import settings
 
 DATA_PATH = os.path.join(os.path.abspath(os.sep), 'app', 'data')
 
@@ -33,7 +34,7 @@ def _get_s3_client():
 
 async def _delete_s3(file_type, identifier, delete_previous=False):
     client = _get_s3_client()
-    key = f'{file_type}/{identifier}'
+    key = '{}/{}'.format(file_type, sha3(identifier))
 
     await async_call(client.delete_object(
         Bucket=settings.aws_s3_bucket,
@@ -48,7 +49,7 @@ async def _delete_s3(file_type, identifier, delete_previous=False):
 
 
 async def _delete_local(file_type, identifier, delete_previous=False):
-    file_path = os.path.join(DATA_PATH, file_type, identifier)
+    file_path = os.path.join(DATA_PATH, file_type, sha3(identifier))
 
     if os.path.isfile(file_path):
         os.remove(file_path)
@@ -65,7 +66,7 @@ async def _load_s3(file_type, identifier, decode=True):
     try:
         object_data = await async_call(client.get_object(
             Bucket=settings.aws_s3_bucket,
-            Key=f'{file_type}/{identifier}'
+            Key='{}/{}'.format(file_type, sha3(identifier))
         ))
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == 'NoSuchKey':
@@ -77,6 +78,9 @@ async def _load_s3(file_type, identifier, decode=True):
 
     data = await async_call(object_data.get('Body').read())
 
+    if data:
+        data = decrypt(data, identifier)
+
     try:
         if data and decode:
             return json.loads(data)
@@ -87,11 +91,14 @@ async def _load_s3(file_type, identifier, decode=True):
 
 
 async def _load_local(file_type, identifier, decode=True):
-    file_path = os.path.join(DATA_PATH, file_type, identifier)
+    file_path = os.path.join(DATA_PATH, file_type, sha3(identifier))
 
     if os.path.isfile(file_path):
         with open(file_path, 'rb') as file:
             data = file.read()
+
+            if data:
+                data = decrypt(data, identifier)
 
             try:
                 if data and decode:
@@ -106,7 +113,7 @@ async def _load_local(file_type, identifier, decode=True):
 
 async def _store_s3(file_type, identifier, data, save_previous=False):
     client = _get_s3_client()
-    key = f'{file_type}/{identifier}'
+    key = '{}/{}'.format(file_type, sha3(identifier))
 
     if isinstance(data, str):
         data = data.encode('utf-8')
@@ -128,6 +135,9 @@ async def _store_s3(file_type, identifier, data, save_previous=False):
             else:
                 raise e
 
+    if data:
+        data = encrypt(data, identifier)
+
     await async_call(client.put_object(
         Bucket=settings.aws_s3_bucket,
         Key=key,
@@ -137,7 +147,7 @@ async def _store_s3(file_type, identifier, data, save_previous=False):
 
 async def _store_local(file_type, identifier, data, save_previous=False):
     directory = os.path.join(DATA_PATH, file_type)
-    file_path = os.path.join(directory, identifier)
+    file_path = os.path.join(directory, sha3(identifier))
 
     if isinstance(data, str):
         data = data.encode('utf-8')
@@ -149,6 +159,9 @@ async def _store_local(file_type, identifier, data, save_previous=False):
 
     if save_previous and os.path.isfile(file_path):
         shutil.copyfile(file_path, f'{file_path}.previousver')
+
+    if data:
+        data = encrypt(data, identifier)
 
     with open(file_path, 'wb') as file:
         file.write(data)

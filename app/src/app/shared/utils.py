@@ -32,16 +32,21 @@ def convert_timestamp(timestamp):
 
 def snake_case(key):
     s1 = re.sub(r'(.)([A-Z][a-z]+)', r'\1_\2', key)
+
     return re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
 def camel_case(key):
     acronyms = ['api']
     key = key.lower()
+
     return ''.join([key.split('_')[0]] + [w.upper() if w in acronyms else w.capitalize() for w in key.split('_')][1:])
 
 
 def sha3(value):
+    if isinstance(value, str):
+        value = value.encode('utf-8')
+
     return hashlib.sha3_256(value).hexdigest()
 
 
