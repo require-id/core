@@ -45,9 +45,7 @@ run:
 
 test:
 	if [ ! ${IMAGE_BUILT} ]; then make build; fi
-	docker rm ${SERVICE_NAME} 2> /dev/null &> /dev/null || true
-	docker network create --driver bridge ${DOCKER_NETWORK} 2> /dev/null &> /dev/null || true
-	docker run -ti -p ${LOCAL_PORT}:80 -v ${PWD}/app:/app --network=${DOCKER_NETWORK} -e CONFIG_DATA='$(call quotestr,$(CONFIG_DATA))' --name ${SERVICE_NAME} ${IMAGE_NAME}:dev sh -c "pytest tests/ && flake8 --ignore E501"
+	docker run -ti -v ${PWD}/app:/app ${IMAGE_NAME}:dev sh -c "pytest tests/ && flake8 --ignore E501"
 
 shell:
 	docker exec -ti ${SERVICE_NAME} /bin/bash
