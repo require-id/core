@@ -49,8 +49,8 @@ RUN curl -L -o /tmp/nginx.tar.gz https://nginx.org/download/nginx-1.16.0.tar.gz 
         && mkdir -p /run/nginx \
         && chown nginx:nginx /run/nginx
 
-RUN curl -L -o /tmp/get-poetry.py https://raw.githubusercontent.com/sdispater/poetry/0.12.16/get-poetry.py \
-    && python /tmp/get-poetry.py --yes --version 0.12.16 \
+RUN curl -L -o /tmp/get-poetry.py https://raw.githubusercontent.com/sdispater/poetry/0.12.17/get-poetry.py \
+    && python /tmp/get-poetry.py --yes --version 0.12.17 \
     && rm -f /tmp/get-poetry.py \
     && mv /root/.poetry /usr/local/lib/poetry \
     && (echo 'python /usr/local/lib/poetry/bin/poetry "$@"' > /usr/local/bin/poetry) \
