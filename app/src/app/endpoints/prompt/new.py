@@ -45,7 +45,7 @@ async def handler(values=None, **kwargs):
         'responseHash': None
     }
 
-    await store('prompt', prompt_identifier, stored_data)
+    await store('prompt', prompt_identifier, store_data)
     await store('user', values.prompt_user_hash, store_data)
 
     subscription_data = await load('subscription', values.prompt_user_hash)  # noqa
