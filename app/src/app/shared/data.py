@@ -70,6 +70,8 @@ async def _load_s3(file_type, identifier, decode=True):
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == 'NoSuchKey':
             return None
+        if e.response['Error']['Code'] == 'AccessDenied':
+            return None
         else:
             raise e
 
@@ -120,6 +122,8 @@ async def _store_s3(file_type, identifier, data, save_previous=False):
             ))
         except botocore.exceptions.ClientError as e:
             if e.response['Error']['Code'] == 'NoSuchKey':
+                pass
+            if e.response['Error']['Code'] == 'AccessDenied':
                 pass
             else:
                 raise e

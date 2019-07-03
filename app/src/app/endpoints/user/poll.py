@@ -2,6 +2,7 @@ import datetime
 
 from app.shared import schema
 from app.shared.data import delete, load, store
+from app.shared.handler import lambda_handler
 from app.shared.utils import convert_timestamp, is_expired
 
 SCHEMA = schema.Schema(
@@ -9,11 +10,8 @@ SCHEMA = schema.Schema(
 )
 
 
-async def handler(event, context):
-    values = await SCHEMA.load(event.get('queryStringParameters', {}))
-    if values.error:
-        return 400, {'error': values.error}
-
+@lambda_handler(SCHEMA)
+async def handler(values=None, **kwargs):
     stored_data = await load('user', values.prompt_user_hash)
     if not stored_data:
         return 404, {'error': 'No available prompt'}
@@ -32,7 +30,6 @@ async def handler(event, context):
         store_data = dict(stored_data)
         store_data['state'] = state
 
-        await store('user', values.prompt_user_hash, store_data)
         await store('prompt', prompt_identifier, store_data)
     elif stored_data.get('state') == 'pending':
         store_data = dict(stored_data)

@@ -1,8 +1,8 @@
-import base64
+import datetime
 import json
 import uuid
 
-from app.shared.utils import async_call, camel_case, convert_timestamp, snake_case, validate_base64, validate_hash, validate_uuid
+from app.shared.utils import async_call, camel_case, convert_timestamp, validate_base64, validate_hash, validate_url, validate_uuid
 
 
 NOT_DEFINED = str(uuid.uuid4())
@@ -65,7 +65,7 @@ class Schema:
         key_map = {}
         for k, v in kwargs.items():
             schema_map[k] = v
-            key_map[k.replace('_', '')] = k
+            key_map[k.lower().replace('_', '')] = k
 
         self.schema_map = schema_map
         self.key_map = key_map
@@ -119,7 +119,7 @@ class Schema:
 
             if definition & TIMESTAMP == TIMESTAMP and value is not None:
                 ts = convert_timestamp(str(value))
-                if not ts:
+                if not ts or ts > datetime.datetime.now() + datetime.timedelta(seconds=60):
                     values.update(error=f'Invalid timestamp value: {external_key}')
                     return values
                 value = ts

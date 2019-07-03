@@ -15,6 +15,7 @@ AWS_STACK := "require-id"
 EXTRAOPTIONS := $(shell if [ `docker version -f '{{.Server.Experimental}}'` = true ]; then echo --squash; fi)
 CONFIG_DATA := $(shell if [ -e "config.json" ]; then cat config.json; else cat config.example.json; fi)
 IMAGE_BUILT := $(shell if [ `docker images ${IMAGE_NAME}:dev -q` ]; then echo -n 1; fi)
+APP_API_KEY := $(shell (if [ -e "config.json" ]; then cat config.json; else cat config.example.json; fi) | python -c 'import sys, json; print(json.load(sys.stdin)["app_api_key"])')
 
 ifeq (build,$(firstword $(MAKECMDGOALS)))
   RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
@@ -37,7 +38,8 @@ run:
 	if [ ! ${IMAGE_BUILT} ]; then make build; fi
 	docker rm ${SERVICE_NAME} 2> /dev/null &> /dev/null || true
 	docker network create --driver bridge requireid 2> /dev/null &> /dev/null || true
-	@echo "- Docker: routing HTTP traffic on port ${LOCAL_PORT} -> 80"
+	@echo "- Docker: routing HTTP traffic on local port ${LOCAL_PORT} -> container (:80) -> service (:8080)"
+	@echo "- Request API: $$ curl -H \"X-API-Key: ${APP_API_KEY}\" http://127.0.0.1:4711/api/status"
 	docker run -ti -p ${LOCAL_PORT}:80 -v ${PWD}/app:/app --network=requireid -e CONFIG_DATA='$(call quotestr,$(CONFIG_DATA))' --name ${SERVICE_NAME} ${IMAGE_NAME}:dev
 
 shell:
@@ -77,8 +79,9 @@ poetry_remove:
 	make build
 
 sam_api:
-	sam local start-api --profile ${AWS_PROFILE} --template app/template.yml
+	sam local start-api --profile ${AWS_PROFILE} --template template.yml
 
 deploy:
-	sam package --template-file app/template.yml --profile ${AWS_PROFILE} --s3-bucket ${AWS_LAMBDA_S3} --region ${AWS_REGION} --output-template-file app/packaged.yml
-	sam deploy --profile ${AWS_PROFILE} --region ${AWS_REGION} --template-file app/packaged.yml --stack-name ${AWS_STACK} --capabilities CAPABILITY_IAM
+	sam package --template-file template.yml --profile ${AWS_PROFILE} --s3-bucket ${AWS_LAMBDA_S3} --region ${AWS_REGION} --output-template-file packaged.yml
+	sam deploy --profile ${AWS_PROFILE} --region ${AWS_REGION} --template-file packaged.yml --stack-name ${AWS_STACK} --capabilities CAPABILITY_IAM
+	rm packaged.yml

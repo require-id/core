@@ -1,11 +1,12 @@
-import asyncio
 import importlib
 import json
 import re
-from settings import settings
+
+from app.shared.handler import lambda_handler
 
 
-async def handler(event, context):
+@lambda_handler
+async def handler(event=None, context=None, **kwargs):
     unknown_api_response = 404, json.dumps({'message': 'Invalid API'})
 
     path = event.get('path')
@@ -27,25 +28,5 @@ async def handler(event, context):
         return unknown_api_response
 
     func = getattr(method_module, 'handler', None)
-    status_code, return_value = await func(event, context)
 
-    if isinstance(return_value, dict) or isinstance(return_value, list):
-        return_value = json.dumps(return_value)
-
-    return status_code, return_value
-
-
-def run(event, context):
-    loop = asyncio.get_event_loop()
-    try:
-        status_code, body = loop.run_until_complete(handler(event, context))
-    except Exception as e:
-        status_code = 500
-        body = json.dumps({'message': 'Internal server error'})
-        if settings.debug:
-            body = json.dumps({'message': 'Internal server error', 'error': str(e)})
-
-    return {
-        'statusCode': status_code,
-        'body': body
-    }
+    return await func(event, context, coro=True)

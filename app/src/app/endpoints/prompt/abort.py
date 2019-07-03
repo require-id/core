@@ -1,16 +1,14 @@
 from app.shared import schema
 from app.shared.data import load, store
+from app.shared.handler import lambda_handler
 
 SCHEMA = schema.Schema(
     prompt_identifier=schema.UUID | schema.REQUIRED
 )
 
 
-async def handler(event, context):
-    values = await SCHEMA.load(event.get('queryStringParameters', {}))
-    if values.error:
-        return 400, {'error': values.error}
-
+@lambda_handler(SCHEMA)
+async def handler(values=None, **kwargs):
     stored_data = await load('prompt', values.prompt_identifier)
     if not stored_data:
         return 404, {'error': 'No such promptIdentifier'}

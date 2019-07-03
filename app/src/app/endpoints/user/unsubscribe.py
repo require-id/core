@@ -1,7 +1,6 @@
-import json
-
 from app.shared import schema
-from app.shared.data import delete, load
+from app.shared.data import delete, load, store
+from app.shared.handler import lambda_handler
 
 SCHEMA = schema.Schema(
     prompt_user_hash=schema.HASH | schema.REQUIRED,
@@ -10,11 +9,8 @@ SCHEMA = schema.Schema(
 )
 
 
-async def handler(event, context):
-    values = await SCHEMA.load(event.get('body'))
-    if values.error:
-        return 400, {'error': values.error}
-
+@lambda_handler(SCHEMA)
+async def handler(values=None, **kwargs):
     subscription_data = await load('subscription', values.prompt_user_hash)
     if not subscription_data or not isinstance(subscription_data, list):
         await delete('subscription', values.prompt_user_hash)

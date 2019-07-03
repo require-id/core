@@ -47,7 +47,7 @@ settings = Settings({
     'aws_access_key_id': None if is_truthy(os.getenv('USE_LAMBDA_ROLE')) else (_aws_config_data.get('aws_access_key_id') or os.getenv('AWS_ACCESS_KEY_ID') or None),
     'aws_secret_access_key': None if is_truthy(os.getenv('USE_LAMBDA_ROLE')) else (_aws_config_data.get('aws_secret_access_key') or os.getenv('AWS_SECRET_ACCESS_KEY') or None),
     'aws_region': _aws_config_data.get('region_name') or os.getenv('AWS_DEFAULT_REGION') or 'eu-west-1',
-    'aws_s3_bucket':  _aws_config_data.get('aws_s3_bucket') or os.getenv('AWS_S3_BUCKET'),
+    'aws_s3_bucket': _aws_config_data.get('aws_s3_bucket') or os.getenv('AWS_S3_BUCKET'),
     'aws_s3_endpoint': _aws_config_data.get('aws_s3_endpoint'),
     'debug': is_truthy(_config_data.get('debug') or os.getenv('DEBUG')),
     'storage_method': _storage_method

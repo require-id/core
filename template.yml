@@ -239,8 +239,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Runtime: python3.7
-      Handler: app.router.run
-      CodeUri: src
+      Handler: app.router.handler
+      CodeUri: app/src
       Role: !GetAtt RequireIDLambdaExecutionRole.Arn
       Timeout: 15
       MemorySize: 512

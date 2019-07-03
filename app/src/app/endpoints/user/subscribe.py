@@ -1,8 +1,6 @@
-import datetime
-import json
-
 from app.shared import schema
-from app.shared.data import store
+from app.shared.data import load, store
+from app.shared.handler import lambda_handler
 
 SCHEMA = schema.Schema(
     prompt_user_hash=schema.HASH | schema.REQUIRED,
@@ -11,11 +9,8 @@ SCHEMA = schema.Schema(
 )
 
 
-async def handler(event, context):
-    values = await SCHEMA.load(event.get('body'))
-    if values.error:
-        return 400, {'error': values.error}
-
+@lambda_handler(SCHEMA)
+async def handler(values=None, **kwargs):
     data = {
         'promptUserHash': values.prompt_user_hash,
         'deviceToken': values.device_token,

@@ -1,7 +1,6 @@
-import json
-
 from app.shared import schema
 from app.shared.data import store
+from app.shared.handler import lambda_handler
 
 SCHEMA = schema.Schema(
     seed_hash=schema.HASH | schema.REQUIRED,
@@ -9,11 +8,8 @@ SCHEMA = schema.Schema(
 )
 
 
-async def handler(event, context):
-    values = await SCHEMA.load(event.get('body'))
-    if values.error:
-        return 400, {'error': values.error}
-
+@lambda_handler(SCHEMA)
+async def handler(values=None, **kwargs):
     await store('backup', values.seed_hash, values.backup_data, save_previous=True)
 
     return 200, {

@@ -3,6 +3,7 @@ import uuid
 
 from app.shared import schema
 from app.shared.data import load, store
+from app.shared.handler import lambda_handler
 from app.shared.utils import is_expired, sha3
 
 SCHEMA = schema.Schema(
@@ -13,11 +14,8 @@ SCHEMA = schema.Schema(
 )
 
 
-async def handler(event, context):
-    values = await SCHEMA.load(event.get('body'))
-    if values.error:
-        return 400, {'error': values.error}
-
+@lambda_handler(SCHEMA)
+async def handler(values=None, **kwargs):
     try:
         expire_at = values.timestamp + datetime.timedelta(seconds=int(values.expire))
     except Exception:
@@ -47,7 +45,7 @@ async def handler(event, context):
         'responseHash': None
     }
 
-    await store('prompt', prompt_identifier, store_data)
+    await store('prompt', prompt_identifier, stored_data)
     await store('user', values.prompt_user_hash, store_data)
 
     subscription_data = await load('subscription', values.prompt_user_hash)  # noqa

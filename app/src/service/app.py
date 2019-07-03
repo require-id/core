@@ -46,7 +46,7 @@ class Service(Base):
         event = LambdaEvent(request)
         context = LambdaContext(request)
 
-        status_code, body = await router.handler(await event.as_dict(), context)
-        if status_code >= 400 and status_code not in (400, 404, 406):
-            return status_code, await self.error(status_code)
+        response = await router.handler(await event.as_dict(), context, coro=True)
+        status_code, body = response.get('statusCode'), response.get('body')
+
         return status_code, body
