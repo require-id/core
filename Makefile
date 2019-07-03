@@ -45,7 +45,7 @@ run:
 
 test:
 	if [ ! ${IMAGE_BUILT} ]; then make build; fi
-	docker run -ti -v ${PWD}/app:/app ${IMAGE_NAME}:dev sh -c "pytest tests/ && flake8 --ignore E501"
+	docker run -ti -v ${PWD}/app:/app ${IMAGE_NAME}:dev sh -c "pytest tests/ && flake8 --ignore E501 --exclude src/Crypto"
 
 shell:
 	docker exec -ti ${SERVICE_NAME} /bin/bash
