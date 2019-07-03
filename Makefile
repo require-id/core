@@ -12,6 +12,7 @@ AWS_PROFILE := "require-id"
 AWS_REGION := "eu-west-1"
 AWS_LAMBDA_S3 := "require-id-lambda"
 AWS_STACK := "require-id"
+DOCKER_NETWORK := "require-id"
 EXTRAOPTIONS := $(shell if [ `docker version -f '{{.Server.Experimental}}'` = true ]; then echo --squash; fi)
 CONFIG_DATA := $(shell if [ -e "config.json" ]; then cat config.json; else cat config.example.json; fi)
 IMAGE_BUILT := $(shell if [ `docker images ${IMAGE_NAME}:dev -q` ]; then echo -n 1; fi)
@@ -37,23 +38,29 @@ build:
 run:
 	if [ ! ${IMAGE_BUILT} ]; then make build; fi
 	docker rm ${SERVICE_NAME} 2> /dev/null &> /dev/null || true
-	docker network create --driver bridge requireid 2> /dev/null &> /dev/null || true
+	docker network create --driver bridge ${DOCKER_NETWORK} 2> /dev/null &> /dev/null || true
 	@echo "- Docker: routing HTTP traffic on local port ${LOCAL_PORT} -> container (:80) -> service (:8080)"
 	@echo "- Request API: $$ curl -H \"X-API-Key: ${APP_API_KEY}\" http://127.0.0.1:4711/api/status"
-	docker run -ti -p ${LOCAL_PORT}:80 -v ${PWD}/app:/app --network=requireid -e CONFIG_DATA='$(call quotestr,$(CONFIG_DATA))' --name ${SERVICE_NAME} ${IMAGE_NAME}:dev
+	docker run -ti -p ${LOCAL_PORT}:80 -v ${PWD}/app:/app --network=${DOCKER_NETWORK} -e CONFIG_DATA='$(call quotestr,$(CONFIG_DATA))' --name ${SERVICE_NAME} ${IMAGE_NAME}:dev
+
+test:
+	if [ ! ${IMAGE_BUILT} ]; then make build; fi
+	docker rm ${SERVICE_NAME} 2> /dev/null &> /dev/null || true
+	docker network create --driver bridge ${DOCKER_NETWORK} 2> /dev/null &> /dev/null || true
+	docker run -ti -p ${LOCAL_PORT}:80 -v ${PWD}/app:/app --network=${DOCKER_NETWORK} -e CONFIG_DATA='$(call quotestr,$(CONFIG_DATA))' --name ${SERVICE_NAME} ${IMAGE_NAME}:dev sh -c "pytest tests/ && flake8 --ignore E501"
 
 shell:
 	docker exec -ti ${SERVICE_NAME} /bin/bash
 
 cli:
 	if [ ! ${IMAGE_BUILT} ]; then make build; fi
-	docker network create --driver bridge requireid 2> /dev/null &> /dev/null || true
-	docker run -ti -v ${PWD}/app:/app --network=requireid -e CONFIG_DATA='$(call quotestr,$(CONFIG_DATA))' ${IMAGE_NAME}:dev /bin/bash
+	docker network create --driver bridge ${DOCKER_NETWORK} 2> /dev/null &> /dev/null || true
+	docker run -ti -v ${PWD}/app:/app --network=${DOCKER_NETWORK} -e CONFIG_DATA='$(call quotestr,$(CONFIG_DATA))' ${IMAGE_NAME}:dev /bin/bash
 
 project_cli:
 	if [ ! ${IMAGE_BUILT} ]; then make build; fi
-	docker network create --driver bridge requireid 2> /dev/null &> /dev/null || true
-	docker run -ti -v ${PWD}/app:/app -v ${PWD}:/project -w /project --network=requireid -e CONFIG_DATA='$(call quotestr,$(CONFIG_DATA))' ${IMAGE_NAME}:dev /bin/bash
+	docker network create --driver bridge ${DOCKER_NETWORK} 2> /dev/null &> /dev/null || true
+	docker run -ti -v ${PWD}/app:/app -v ${PWD}:/project -w /project --network=${DOCKER_NETWORK} -e CONFIG_DATA='$(call quotestr,$(CONFIG_DATA))' ${IMAGE_NAME}:dev /bin/bash
 
 poetry:
 	if [ ! ${IMAGE_BUILT} ]; then make build; fi

@@ -1,10 +1,19 @@
 [tool.poetry]
-name = "require-id"
+name = "require-id-core"
 version = "0.0.0"
-description = ""
-authors = [""]
+description = "require.id - core - iOS and Android application for secure and beautiful 2FA management"
+license = "MIT"
+readme = 'README.md'
+keywords = ['require-id', 'require id', 'require.id', '2fa', 'two-factor', 'authentication']
+authors = []
+repository = "https://github.com/require-id/core"
+homepage = "https://require.id/"
 
 [tool.poetry.dependencies]
 python = "^3.7"
 tomodachi = "^0.16.2"
 
+[tool.poetry.dev-dependencies]
+flake8 = "^3.7"
+pytest = "^4.4"
+pytest-asyncio = "^0.10.0"

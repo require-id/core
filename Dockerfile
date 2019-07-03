@@ -78,7 +78,8 @@ ENTRYPOINT ["/bin/start-service"]
 
 WORKDIR /
 COPY poetry.lock pyproject.toml ./
-RUN poetry install --no-dev
+RUN poetry install
+#RUN poetry install --no-dev
 
 ADD app /app
 WORKDIR /app

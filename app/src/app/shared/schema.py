@@ -2,8 +2,8 @@ import datetime
 import json
 import uuid
 
-from app.shared.utils import async_call, camel_case, convert_timestamp, validate_base64, validate_hash, validate_url, validate_uuid
-
+from app.shared.utils import async_call, camel_case, convert_timestamp
+from app.shared.validation import validate_base64, validate_hash, validate_url, validate_uuid
 
 NOT_DEFINED = str(uuid.uuid4())
 REQUIRED = 1

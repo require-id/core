@@ -21,8 +21,8 @@ class LambdaEvent:
             'resource': self.path,
             'path': self.path,
             'httpMethod': self.method,
-            'headers': dict(self.headers),
-            'multiValueHeaders': {k: [v] for k, v in self.headers.items()},
+            'headers': dict(self.headers) if self.headers else {},
+            'multiValueHeaders': {k: [v] for k, v in self.headers.items()} if self.headers else {},
             'queryStringParameters': {k: v for k, v in self.query.items()} if self.query else None,
             'multiValueQueryStringParameters': {k: [v] for k, v in self.query.items()} if self.query else None,
             'pathParameters': None,
@@ -33,12 +33,12 @@ class LambdaEvent:
                 'path': self.path,
                 'protocol': 'HTTP/1.1',
                 'identity': {
-                    'apiKey': self.headers.get('X-API-Key'),
-                    'userAgent': self.headers.get('User-Agent'),
+                    'apiKey': self.headers.get('X-API-Key') if self.headers else None,
+                    'userAgent': self.headers.get('User-Agent') if self.headers else None,
                     'sourceIp': self.ip
                 },
                 'domainName': self.host
             },
-            'body': await self.read_body(),
+            'body': await self.read_body() if self.read_body else None,
             'isBase64Encoded': False
         }
