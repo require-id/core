@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import json
 import os
 import shutil
@@ -90,6 +91,34 @@ async def _load_s3(file_type, identifier, decode=True):
     return data
 
 
+async def _mtime_local(file_type, filename):
+    file_path = os.path.join(DATA_PATH, file_type, filename)
+
+    if os.path.isfile(file_path):
+        stinfo = os.stat(file_path)
+        return datetime.datetime.utcfromtimestamp(stinfo.st_mtime)
+
+    return None
+
+
+async def _mtime_s3(file_type, identifier, decode=True):
+    client = _get_s3_client()
+
+    try:
+        object_data = await async_call(client.head_object(
+            Bucket=settings.aws_s3_bucket,
+            Key='{}/{}'.format(file_type, sha3(identifier))
+        ))
+    except botocore.exceptions.ClientError as e:
+        if e.response['Error']['Code'] == 'NoSuchKey':
+            return None
+        if e.response['Error']['Code'] == 'AccessDenied':
+            return None
+        else:
+            raise e
+
+    return None
+
 async def _load_local(file_type, identifier, decode=True):
     file_path = os.path.join(DATA_PATH, file_type, sha3(identifier))
 
@@ -171,6 +200,10 @@ delete_functions = {
     's3': _delete_s3,
     'docker_volume': _delete_local
 }
+mtime_functions = {
+    's3': _mtime_s3,
+    'docker_volume': _mtime_local
+}
 load_functions = {
     's3': _load_s3,
     'docker_volume': _load_local
@@ -181,5 +214,6 @@ store_functions = {
 }
 
 delete = delete_functions.get(settings.storage_method)
+mtime = mtime_functions.get(settings.storage_method)
 load = load_functions.get(settings.storage_method)
 store = store_functions.get(settings.storage_method)

@@ -8,7 +8,7 @@ from app.shared.utils import is_expired, sha3
 
 SCHEMA = schema.Schema(
     prompt_user_hash=schema.HASH | schema.REQUIRED,
-    timestamp=(schema.TIMESTAMP, lambda: datetime.datetime.now()),
+    timestamp=(schema.TIMESTAMP, lambda: datetime.datetime.utcnow()),
     expire=(schema.EXPIRE, 90),
     encrypted_data=schema.BASE64
 )

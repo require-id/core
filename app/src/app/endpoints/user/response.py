@@ -31,7 +31,7 @@ async def handler(values=None, **kwargs):
 
     prompt_identifier = stored_data.get('promptIdentifier')
     state = 'approved' if values.approve else 'denied'
-    responded_at = datetime.datetime.now()
+    responded_at = datetime.datetime.utcnow()
 
     store_data = dict(stored_data)
     store_data['state'] = state

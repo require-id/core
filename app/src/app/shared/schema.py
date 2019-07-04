@@ -119,7 +119,7 @@ class Schema:
 
             if definition & TIMESTAMP == TIMESTAMP and value is not None:
                 ts = convert_timestamp(str(value))
-                if not ts or ts > datetime.datetime.now() + datetime.timedelta(seconds=60):
+                if not ts or ts > datetime.datetime.utcnow() + datetime.timedelta(seconds=60):
                     values.update(error=f'Invalid timestamp value: {external_key}')
                     return values
                 value = ts

@@ -56,7 +56,7 @@ def is_expired(value):
     else:
         ts = value
 
-    if ts < datetime.datetime.now():
+    if ts < datetime.datetime.utcnow():
         return True
 
     return False

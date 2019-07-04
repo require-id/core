@@ -10,7 +10,7 @@ from app.shared import schema
 async def test_schema(loop):
     SCHEMA = schema.Schema(
         prompt_user_hash=schema.HASH | schema.REQUIRED,
-        timestamp=(schema.TIMESTAMP, lambda: datetime.datetime.now()),
+        timestamp=(schema.TIMESTAMP, lambda: datetime.datetime.utcnow()),
         expire=(schema.EXPIRE, 90),
         encrypted_data=schema.BASE64
     )
