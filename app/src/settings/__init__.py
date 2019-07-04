@@ -1,3 +1,4 @@
+import app
 import json
 import os
 
@@ -43,6 +44,7 @@ if _storage_method not in ('s3', 'docker_volume'):
 
 settings = Settings({
     'app_api_key': _config_data.get('app_api_key') or None,
+    'data_path': _config_data.get('data_path') or os.path.abspath(os.path.join(os.path.dirname(app.__file__), '..', '..', 'data')),
     'prompt_api_key': _config_data.get('prompt_api_key') or None,
     'aws_access_key_id': None if is_truthy(os.getenv('USE_LAMBDA_ROLE')) else (_aws_config_data.get('aws_access_key_id') or os.getenv('AWS_ACCESS_KEY_ID') or None),
     'aws_secret_access_key': None if is_truthy(os.getenv('USE_LAMBDA_ROLE')) else (_aws_config_data.get('aws_secret_access_key') or os.getenv('AWS_SECRET_ACCESS_KEY') or None),

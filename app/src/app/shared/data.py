@@ -14,8 +14,6 @@ from app.shared.encryption import encrypt, decrypt
 from app.shared.utils import async_call, sha3
 from settings import settings
 
-DATA_PATH = os.path.join(os.path.abspath(os.sep), 'app', 'data')
-
 
 def _get_s3_client():
     try:
@@ -50,7 +48,7 @@ async def _delete_s3(file_type, identifier, delete_previous=False):
 
 
 async def _delete_local(file_type, identifier, delete_previous=False):
-    file_path = os.path.join(DATA_PATH, file_type, sha3(identifier))
+    file_path = os.path.join(settings.data_path, file_type, sha3(identifier))
 
     if os.path.isfile(file_path):
         os.remove(file_path)
@@ -91,12 +89,41 @@ async def _load_s3(file_type, identifier, decode=True):
     return data
 
 
-async def _mtime_local(file_type, filename):
-    file_path = os.path.join(DATA_PATH, file_type, filename)
+async def _clean_s3(file_types, expire):
+    pass
 
-    if os.path.isfile(file_path):
-        stinfo = os.stat(file_path)
-        return datetime.datetime.utcfromtimestamp(stinfo.st_mtime)
+
+async def _clean_local(file_types, expire):
+    if not settings.data_path:
+        return
+    if isinstance(file_types, str):
+        file_types = (file_types, )
+    for file_type in file_types:
+        if not file_type:
+            continue
+        for root, dirs, files in os.walk(os.path.join(settings.data_path, file_type), topdown=True):
+            for file in files:
+                file_path = os.path.join(root, file)
+                _file_type, filename = file_path.rsplit(os.sep)[-2:]
+                if _file_type != file_type:
+                    continue
+                ts = await mtime(file_type, filename)
+                if ts and ts < expire:
+                    try:
+                        os.remove(file_path)
+                    except Exception:
+                        pass
+
+
+async def _mtime_local(file_type, filename):
+    file_path = os.path.join(settings.data_path, file_type, filename)
+
+    try:
+        if os.path.isfile(file_path):
+            stinfo = os.stat(file_path)
+            return datetime.datetime.utcfromtimestamp(stinfo.st_mtime)
+    except Exception:
+        return None
 
     return None
 
@@ -105,7 +132,7 @@ async def _mtime_s3(file_type, identifier, decode=True):
     client = _get_s3_client()
 
     try:
-        object_data = await async_call(client.head_object(
+        object_data = await async_call(client.head_object(  # noqa
             Bucket=settings.aws_s3_bucket,
             Key='{}/{}'.format(file_type, sha3(identifier))
         ))
@@ -119,8 +146,9 @@ async def _mtime_s3(file_type, identifier, decode=True):
 
     return None
 
+
 async def _load_local(file_type, identifier, decode=True):
-    file_path = os.path.join(DATA_PATH, file_type, sha3(identifier))
+    file_path = os.path.join(settings.data_path, file_type, sha3(identifier))
 
     if os.path.isfile(file_path):
         with open(file_path, 'rb') as file:
@@ -175,7 +203,7 @@ async def _store_s3(file_type, identifier, data, save_previous=False):
 
 
 async def _store_local(file_type, identifier, data, save_previous=False):
-    directory = os.path.join(DATA_PATH, file_type)
+    directory = os.path.join(settings.data_path, file_type)
     file_path = os.path.join(directory, sha3(identifier))
 
     if isinstance(data, str):
@@ -200,6 +228,10 @@ delete_functions = {
     's3': _delete_s3,
     'docker_volume': _delete_local
 }
+clean_functions = {
+    's3': _clean_s3,
+    'docker_volume': _clean_local
+}
 mtime_functions = {
     's3': _mtime_s3,
     'docker_volume': _mtime_local
@@ -214,6 +246,7 @@ store_functions = {
 }
 
 delete = delete_functions.get(settings.storage_method)
+clean = clean_functions.get(settings.storage_method)
 mtime = mtime_functions.get(settings.storage_method)
 load = load_functions.get(settings.storage_method)
 store = store_functions.get(settings.storage_method)

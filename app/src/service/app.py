@@ -1,10 +1,9 @@
 import datetime
-import os
 
 import tomodachi
 
 from app import router
-from app.shared.data import mtime, DATA_PATH
+from app.shared.data import clean
 from settings import settings
 from service.base import Base
 from service.context import LambdaContext, LambdaEvent
@@ -57,15 +56,5 @@ class Service(Base):
 
     @tomodachi.schedule('minutely', immediately=True)
     async def clean_data_files(self):
-        expire = datetime.datetime.utcnow() - datetime.timedelta(seconds=3600)
-        file_types = ('user', 'prompt')
-        if settings.storage_method == 'docker_volume':
-            for file_type in file_types:
-                for root, dirs, files in os.walk(os.path.join(DATA_PATH, file_type), topdown=True):
-                    for file in files:
-                        file_path = os.path.join(root, file)
-                        _file_type, filename = file_path.rsplit(os.sep)[-2:]
-                        if _file_type == file_type:
-                            ts = await mtime(file_type, filename)
-                            if ts < expire:
-                                os.remove(file_path)
+        await clean(('user', ), expire=datetime.datetime.utcnow() - datetime.timedelta(seconds=600))
+        await clean(('prompt', ), expire=datetime.datetime.utcnow() - datetime.timedelta(seconds=3600))

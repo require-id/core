@@ -3,6 +3,7 @@
     "prompt_api_key": "hL30bXrRVVJ6kUjQ62lg",
     "storage_method": "docker_volume",
     "debug": false,
+    "data_path": null,
     "aws": {
         "aws_access_key_id": "AKIAIXXXXXXREQUIREID",
         "aws_secret_access_key": "abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcde",
